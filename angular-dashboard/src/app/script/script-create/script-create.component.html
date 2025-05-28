@@ -1,0 +1,84 @@
+<div class="container">
+  <div class="card">
+    <div class="card-header">
+      {{ isEdit ? 'Modifier le Script' : 'Créer un Script' }}
+    </div>
+    <div class="card-body">
+      <form (ngSubmit)="submitForm(scriptForm)" #scriptForm="ngForm" class="row g-3">
+        <div class="col-md-6">
+          <label for="title" class="form-label">Titre</label>
+          <input type="text" class="form-control" id="title" [(ngModel)]="form.title" name="title" required #title="ngModel">
+          <div *ngIf="title.invalid && (title.dirty || title.touched)" class="text-danger">
+            Le titre est requis
+          </div>
+        </div>
+
+        <div class="col-md-6">
+          <label for="createdBy" class="form-label">Créé par</label>
+          <input type="text" class="form-control" id="createdBy" [(ngModel)]="form.createdBy" name="createdBy" required #createdBy="ngModel">
+          <div *ngIf="createdBy.invalid && (createdBy.dirty || createdBy.touched)" class="text-danger">
+            Le créateur est requis
+          </div>
+        </div>
+
+        <div class="col-md-6">
+          <label for="type" class="form-label">Type de script</label>
+          <select id="type" class="form-select" [(ngModel)]="form.type" name="type" required #type="ngModel">
+            <option value="">Sélectionnez un type</option>
+            <option value="PYTHON">Python</option>
+            <option value="R">R</option>
+            <option value="SQL">SQL</option>
+          </select>
+          <div *ngIf="type.invalid && (type.dirty || type.touched)" class="text-danger">
+            Le type est requis
+          </div>
+        </div>
+
+        <div class="col-12">
+          <label for="content" class="form-label">Code</label>
+          <textarea id="content" class="form-control code-editor" [(ngModel)]="form.content" name="content" rows="10" required #content="ngModel"></textarea>
+          <div *ngIf="content.invalid && (content.dirty || content.touched)" class="text-danger">
+            Le contenu est requis
+          </div>
+        </div>
+
+        <!-- Actions sur le code -->
+        <div class="col-12">
+          <div class="button-group">
+            <button class="btn btn-success" type="button" (click)="runCode()" [disabled]="isRunning || scriptForm.invalid">
+              <i class="bi bi-play-fill"></i> Exécuter
+            </button>
+            <button class="btn btn-outline-primary" type="button" (click)="saveToFile()" [disabled]="scriptForm.invalid">
+              <i class="bi bi-download"></i> Télécharger
+            </button>
+            <button class="btn btn-outline-secondary" type="button" (click)="clearEditor()">
+              <i class="bi bi-trash3"></i> Effacer
+            </button>
+          </div>
+        </div>
+
+        <!-- Résultats d'exécution -->
+<div class="col-12" *ngIf="output">
+  <div class="output-panel" [class.error]="output.includes('Erreur:')" [class.success]="!output.includes('Erreur:')">
+    <app-execution-result
+      [success]="!output.includes('Erreur:')"
+      [output]="output"
+      [error]="output.includes('Erreur:') ? output : ''"
+      [createdBy]="form.createdBy"
+      [date]="currentDate">
+    </app-execution-result>
+  </div>
+</div>
+        <!-- Boutons de soumission -->
+        <div class="col-12 d-flex justify-content-end gap-3 mt-4">
+          <button type="button" class="btn btn-secondary" (click)="cancel()">
+  <i class="bi bi-x-circle"></i> Annuler
+</button>
+          <button type="submit" class="btn btn-primary" [disabled]="scriptForm.invalid">
+            <i class="bi bi-save"></i> {{ isEdit ? 'Mettre à jour' : 'Enregistrer' }}
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>

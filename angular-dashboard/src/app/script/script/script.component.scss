@@ -1,0 +1,66 @@
+.container {
+  margin-top: 20px;
+}
+
+.table th, .table td {
+  vertical-align: middle;
+}
+
+.modal-body pre {
+  background-color: #f8f9fa;
+  padding: 15px;
+  border-radius: 5px;
+}
+.card-header {
+  background-color: #f8f9fa;
+  border-bottom: 1px solid rgba(0,0,0,.125);
+}
+
+.form-label {
+  font-weight: 500;
+  color: #495057;
+}
+
+.table {
+  box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.05);
+}
+
+.table th {
+  background-color: #f8f9fa;
+  border-top: none;
+}
+
+.btn-outline-secondary:hover {
+  background-color: #6c757d;
+  color: white;
+}
+.filters-container {
+  background-color: #f8fafc;
+  border: 1px solid #e9ecef;
+}
+
+.table {
+  font-size: 0.875rem;
+}
+
+.table th {
+  font-weight: 500;
+  text-transform: uppercase;
+  font-size: 0.75rem;
+  letter-spacing: 0.5px;
+  color: #6c757d;
+}
+
+.badge {
+  font-weight: 400;
+  padding: 0.25em 0.4em;
+}
+
+.btn-group-sm > .btn {
+  padding: 0.25rem 0.5rem;
+}
+
+.form-control-sm, .form-select-sm {
+  font-size: 0.825rem;
+  padding: 0.25rem 0.5rem;
+}

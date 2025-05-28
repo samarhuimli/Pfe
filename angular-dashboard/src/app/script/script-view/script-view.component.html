@@ -1,0 +1,28 @@
+<div class="container mt-4">
+  <h2 class="mb-3">Visualisation du Script</h2>
+
+  <div class="mb-3">
+    <h4>{{ script.title }}</h4>
+    <p><strong>Créé par :</strong> {{ script.createdBy }}</p>
+    <p><strong>Type :</strong> {{ script.type }}</p>
+  </div>
+
+  <div class="mb-3">
+    <h6>Contenu :</h6>
+    <pre class="p-3 bg-light rounded">{{ script.content }}</pre>
+  </div>
+
+  <div class="mb-3">
+    <button class="btn btn-primary" (click)="runCode()" [disabled]="isRunning">
+      <i class="bi bi-play-fill"></i> Réexécuter
+    </button>
+  </div>
+
+  <app-execution-result
+    *ngIf="output"
+    [title]="script.title || 'Script sans titre'"
+    [success]="success"
+    [output]="output"
+    [error]="error">
+  </app-execution-result>
+</div>

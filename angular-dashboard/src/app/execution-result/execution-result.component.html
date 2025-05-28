@@ -1,0 +1,56 @@
+<div class="accordion" id="executionAccordion">
+  <div *ngFor="let exec of executions; let i = index" class="accordion-item">
+    <h2 class="accordion-header">
+      <button
+        class="accordion-button"
+        [class.collapsed]="collapseStates[i]"
+        type="button"
+        (click)="toggleCollapse(i)"
+        [attr.aria-expanded]="!collapseStates[i]"
+      >
+        <span class="me-2">
+          <i
+            class="bi"
+            [ngClass]="exec.success ? 'bi-check-circle-fill text-success' : 'bi-x-circle-fill text-danger'"
+          ></i>
+        </span>
+        {{ displayMode === 'single' ? title : title + (executions.length > 1 ? ' - Exécution ' + (i + 1) : '') }}
+        <span class="badge ms-2" [ngClass]="exec.success ? 'bg-success' : 'bg-danger'">
+          {{ exec.success ? 'Success' : 'Failed' }}
+        </span>
+        <span class="ms-2 small text-muted" *ngIf="exec.date">
+          ({{ exec.date | date:'dd/MM/yy HH:mm' }})
+        </span>
+        <span class="ms-2 small" *ngIf="exec.createdBy">
+          • Executé par {{ exec.createdBy }}
+        </span>
+      </button>
+    </h2>
+    <div class="accordion-collapse collapse" [class.show]="!collapseStates[i]">
+      <div class="accordion-body">
+        <!-- Bouton de suppression -->
+        <div class="d-flex justify-content-end mb-2">
+          <button
+            class="btn btn-danger btn-sm"
+            (click)="onDeleteClick(exec._id, $event)"
+            title="Supprimer l'exécution"
+          >
+            <i class="bi bi-trash"></i> Supprimer
+          </button>
+        </div>
+        
+        <!-- Afficher le résultat seulement s'il n'y a pas d'erreur -->
+        <div *ngIf="exec.output && !exec.error" class="mb-3">
+          <h6>Résultat :</h6>
+          <pre class="p-3 bg-light rounded mb-0">{{ exec.output }}</pre>
+        </div>
+        
+        <!-- Afficher l'erreur si elle existe -->
+        <div *ngIf="exec.error" class="mt-3">
+          <h6 class="text-danger">Erreur :</h6>
+          <pre class="p-3 bg-light rounded text-danger mb-0">{{ exec.error }}</pre>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

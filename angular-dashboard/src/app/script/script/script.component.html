@@ -1,0 +1,82 @@
+<div class="container mt-4">
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <h2 class="mb-0">Liste des Scripts</h2>
+    <a class="btn btn-primary" [routerLink]="['/scripts/create']">
+      <i class="bi bi-plus-circle me-1"></i> Créer un script
+    </a>
+  </div>
+
+  <!-- Section de filtrage compacte -->
+  <div class="filters-container mb-4 p-3 bg-light rounded shadow-sm">
+    <div class="row g-2 align-items-end">
+      <div class="col-md-3">
+        <label for="titleFilter" class="form-label small text-muted mb-1">Titre</label>
+        <input type="text" class="form-control form-control-sm" id="titleFilter" 
+               [(ngModel)]="titleFilter" 
+               (input)="applyFilters()"
+               placeholder="Rechercher...">
+      </div>
+      <div class="col-md-2">
+        <label for="typeFilter" class="form-label small text-muted mb-1">Type</label>
+        <select class="form-select form-select-sm" id="typeFilter" 
+                [(ngModel)]="typeFilter" 
+                (change)="applyFilters()">
+          <option value="">Tous</option>
+          <option *ngFor="let type of availableTypes" [value]="type">{{type}}</option>
+        </select>
+      </div>
+      <div class="col-md-2">
+        <label for="userFilter" class="form-label small text-muted mb-1">Utilisateur</label>
+        <select class="form-select form-select-sm" id="userFilter" 
+                [(ngModel)]="userFilter" 
+                (change)="applyFilters()">
+          <option value="">Tous</option>
+          <option *ngFor="let user of availableUsers" [value]="user">{{user}}</option>
+        </select>
+      </div>
+      <div class="col-md-2">
+        <button class="btn btn-sm btn-outline-secondary w-100" (click)="resetFilters()">
+          <i class="bi bi-arrow-counterclockwise"></i> Réinitialiser
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <table class="table table-hover table-sm">
+    <thead class="table-light">
+      <tr>
+        <th>Titre</th>
+        <th>Type</th>
+        <th>Créé par</th>
+        <th>Date</th>
+        <th class="text-end">Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr *ngFor="let script of filteredScripts">
+        <td>{{ script.title }}</td>
+        <td><span class="badge bg-secondary">{{ script.type }}</span></td>
+        <td>{{ script.createdBy }}</td>
+        <td>{{ script.createdAt | date:'shortDate' }}</td>
+        <td class="text-end">
+          <div class="btn-group btn-group-sm" role="group">
+            <a class="btn btn-outline-primary" [routerLink]="['/scripts/edit', script.id]" title="Modifier">
+              <i class="bi bi-pencil-square"></i>
+            </a>
+            <button class="btn btn-outline-danger" (click)="deleteScript(script.id)" title="Supprimer">
+              <i class="bi bi-trash"></i>
+            </button>
+            <a class="btn btn-outline-info" [routerLink]="['/scripts/view', script.id]" title="Voir">
+              <i class="bi bi-eye"></i>
+            </a>
+          </div>
+        </td>
+      </tr>
+    </tbody>
+  </table>
+
+  <!-- Modal de visualisation (inchangé) -->
+  <div class="modal fade" id="viewScriptModal" tabindex="-1" aria-hidden="true">
+    <!-- ... -->
+  </div>
+</div>

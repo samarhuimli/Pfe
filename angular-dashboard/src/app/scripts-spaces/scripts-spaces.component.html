@@ -1,0 +1,21 @@
+<div class="templates-container">
+  <h2 class="section-title">Your script spaces</h2>
+  <!-- <p class="section-subtitle">Quickly start your project with these pre-built templates</p> -->
+
+  <div class="template-cards">
+    <div class="template-card" *ngFor="let template of templates">
+      <div class="card-icon">
+        <i class="fas fa-code"></i>
+      </div>
+      <h3>{{ template.title }}</h3>
+      <div class="author">By {{ template.author }}</div>
+      <p class="description">{{ template.description }}</p>
+      <button class="use-template" (click)="useTemplate(template.code)">
+        Use Template <i class="fas fa-arrow-right"></i>
+      </button>
+    </div>
+  </div>
+
+  
+ 
+</div>
