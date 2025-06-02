@@ -7,12 +7,6 @@ import { Script, ScriptService } from '../../services/script.service';
 import { ExecutionService } from '../../services/execution.service';
 import { ExecutionResultComponent } from '../../execution-result/execution-result.component';
 import { ExecutionResultDTO } from 'src/app/models/execution-result.model';
-import { HttpClient } from '@angular/common/http';
-
-declare function loadPyodide(config: {
-  stdout?: (text: string) => void,
-  stderr?: (text: string) => void
-}): Promise<any>;
 
 @Component({
   selector: 'app-script-create',
@@ -44,13 +38,11 @@ export class ScriptCreateComponent {
 
   output: string = '';
   isRunning: boolean = false;
-  pyodide: any = null;
 
   constructor(
     private scriptService: ScriptService,
     private router: Router,
-    private executionService: ExecutionService,
-    private http: HttpClient
+    private executionService: ExecutionService
   ) {}
 
   async runCode() {
@@ -79,17 +71,16 @@ export class ScriptCreateComponent {
   }
 
   private async runPythonCode() {
-    if (!this.pyodide) {
-      this.pyodide = await loadPyodide({
-        stdout: (text: string) => this.output += text + '\n',
-        stderr: (text: string) => this.output += text + '\n'
-      });
-      await this.pyodide.loadPackage(['numpy']);
-    }
-
-    const result = await this.pyodide.runPython(this.form.content);
-    if (result) {
-      this.output += '\nRésultat: ' + result;
+    try {
+      const response = await this.executionService.executePythonCode(this.form.content, this.form.id).toPromise();
+      if (response.status === 'SUCCESS') {
+        this.output += '\nRésultat: ' + response.output;
+      } else {
+        this.output += '\nErreur: ' + response.error;
+      }
+    } catch (error: any) {
+      this.output += '\nErreur: Échec de la connexion au serveur Python - ' + error.message;
+      console.error('Erreur HTTP:', error);
     }
   }
 
@@ -156,7 +147,6 @@ export class ScriptCreateComponent {
   private saveScriptAndExecution() {
     if (!this.form.title || !this.form.content) return;
 
-    // Sauvegarder le script (si ce n'est pas déjà fait)
     if (!this.isEdit && !this.form.id) {
       this.scriptService.createScript(this.form).subscribe(newScript => {
         this.form.id = newScript.id;
@@ -164,7 +154,6 @@ export class ScriptCreateComponent {
       });
     }
 
-    // Sauvegarder l'exécution
     if (this.output) {
       const executionResult: ExecutionResultDTO = {
         scriptId: this.form.id,

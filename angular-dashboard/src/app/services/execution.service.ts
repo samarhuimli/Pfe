@@ -7,7 +7,7 @@ import { ExecutionResultDTO } from '../models/execution-result.model';
   providedIn: 'root'
 })
 export class ExecutionService {
-  private apiUrl = 'http://localhost:8082/api';
+  private apiUrl = 'http://localhost:8085/api';
 
   constructor(private http: HttpClient) {}
 
@@ -25,7 +25,6 @@ export class ExecutionService {
   }
 
   saveExecutionResult(result: ExecutionResultDTO): Observable<any> {
-    // Convertir executionTime de number à string pour l'API
     const payload = {
       ...result,
       executionTime: result.executionTime != null ? result.executionTime.toString() : undefined
@@ -47,7 +46,6 @@ export class ExecutionService {
       tap(response => console.log('Réponse de l\'exécution R:', response)),
       map(response => {
         const body = response.body as ExecutionResultDTO;
-        // Convertir executionTime de string à number
         if (body.executionTime) {
           body.executionTime = parseFloat(body.executionTime as unknown as string);
         }
@@ -55,11 +53,32 @@ export class ExecutionService {
       }),
       catchError((err: HttpErrorResponse) => {
         console.error('Erreur HTTP lors de l\'exécution R:', err);
-        // Si l'erreur contient une réponse avec un corps, extraire le message d'erreur
         if (err.error && err.error.error) {
           return throwError(() => new Error(err.error.error));
         }
         return throwError(() => new Error('Erreur lors de l\'exécution du code R: ' + err.message));
+      })
+    );
+  }
+
+  executePythonCode(code: string, scriptId: number | null): Observable<ExecutionResultDTO> {
+    const body = { code, scriptId };
+    console.log('Envoi du script Python au serveur:', body);
+    return this.http.post<ExecutionResultDTO>(`${this.apiUrl}/executions/executePython`, body, { observe: 'response' }).pipe(
+      tap(response => console.log('Réponse de l\'exécution Python:', response)),
+      map(response => {
+        const body = response.body as ExecutionResultDTO;
+        if (body.executionTime) {
+          body.executionTime = parseFloat(body.executionTime as unknown as string);
+        }
+        return body;
+      }),
+      catchError((err: HttpErrorResponse) => {
+        console.error('Erreur HTTP lors de l\'exécution Python:', err);
+        if (err.error && err.error.error) {
+          return throwError(() => new Error(err.error.error));
+        }
+        return throwError(() => new Error('Erreur lors de l\'exécution du code Python: ' + err.message));
       })
     );
   }
@@ -71,7 +90,7 @@ export class ExecutionService {
         ...group,
         executions: group.executions.map((exec: any) => ({
           ...exec,
-          executionTime: exec.executionTime ? parseFloat(exec.executionTime) : undefined // Convertir string en number
+          executionTime: exec.executionTime ? parseFloat(exec.executionTime) : undefined
         }))
       }))),
       catchError(err => {
@@ -86,7 +105,7 @@ export class ExecutionService {
       tap(response => console.log('Réponse de getExecutionsByScriptId:', response)),
       map(executions => executions.map(exec => ({
         ...exec,
-        executionTime: exec.executionTime ? parseFloat(exec.executionTime) : undefined // Convertir string en number
+        executionTime: exec.executionTime ? parseFloat(exec.executionTime) : undefined
       }) as ExecutionResultDTO)),
       catchError(err => {
         console.error('Erreur HTTP lors de la récupération des exécutions par scriptId:', err);

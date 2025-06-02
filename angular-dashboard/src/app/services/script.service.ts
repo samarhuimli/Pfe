@@ -15,7 +15,7 @@ export interface Script {
   providedIn: 'root'
 })
 export class ScriptService {
-  private apiUrl = 'http://localhost:8082/api/scripts';
+  private apiUrl = 'http://localhost:8085/api/scripts';
   
   private scriptsSubject: BehaviorSubject<Script[]> = new BehaviorSubject<Script[]>(this.loadScriptsFromLocalStorage());
   private scripts: Script[] = this.scriptsSubject.value;

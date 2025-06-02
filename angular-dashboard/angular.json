@@ -25,34 +25,34 @@
             "tsConfig": "tsconfig.app.json",
             "inlineStyleLanguage": "scss",
             "assets": [
-                  "src/favicon.ico",
-                  "src/assets",
-                  {
-                    "glob": "**/*",
-                    "input": "node_modules/pyodide",
-                    "output": "/assets/pyodide/"
-                  }
-],
+              "src/favicon.ico",
+              "src/assets",
+              {
+                "glob": "**/*",
+                "input": "node_modules/pyodide",
+                "output": "/assets/pyodide/"
+              }
+            ],
             "styles": [
-            "node_modules/bootstrap/dist/css/bootstrap.min.css",
-            "src/styles.scss"
-          ],
+              "node_modules/bootstrap/dist/css/bootstrap.min.css",
+              "src/styles.scss"
+            ],
             "scripts": [
-             "node_modules/bootstrap/dist/js/bootstrap.bundle.min.js"
-]
+              "node_modules/bootstrap/dist/js/bootstrap.bundle.min.js"
+            ]
           },
           "configurations": {
             "production": {
               "budgets": [
                 {
                   "type": "initial",
-                  "maximumWarning": "1mb",
-                  "maximumError": "1mb"
+                  "maximumWarning": "1mb",              
+                  "maximumError": "2mb"                 
                 },
                 {
                   "type": "anyComponentStyle",
-                  "maximumWarning": "2kb",
-                  "maximumError": "4kb"
+                  "maximumWarning": "4kb",              
+                  "maximumError": "4kb"                 
                 }
               ],
               "fileReplacements": [

@@ -10,8 +10,11 @@ import com.example.sandboxspring.repository.ExecutionResultRepository;
 import com.example.sandboxspring.repository.ScriptRepository;
 import lombok.RequiredArgsConstructor;
 import org.renjin.script.RenjinScriptEngineFactory;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.*;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
 
 import javax.script.ScriptEngine;
@@ -26,11 +29,12 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class ExecutionController {
 
+    private static final Logger logger = LoggerFactory.getLogger(ExecutionController.class);
+
     private final ExecutionResultRepository executionResultRepository;
     private final ScriptRepository scriptRepository;
     private final RestTemplate restTemplate = new RestTemplate();
 
-    // URL de l'API Flask dans le conteneur Docker
     private static final String PYTHON_API_URL = "http://python-api:8083/execute";
 
     @PostMapping("/executeR")
@@ -46,7 +50,7 @@ public class ExecutionController {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errorDTO);
         }
 
-        System.out.println("Script R reçu : " + code + ", scriptId: " + scriptId);
+        logger.info("Script R reçu : code={}, scriptId={}", code, scriptId);
 
         ExecutionResultDTO resultDTO = new ExecutionResultDTO();
         try {
@@ -54,28 +58,26 @@ public class ExecutionController {
             ScriptEngine engine = factory.getScriptEngine();
 
             if (engine == null) {
-                System.out.println("Erreur : Renjin ScriptEngine est null");
+                logger.error("Erreur : Renjin ScriptEngine est null");
                 resultDTO.setError("Erreur: Échec de l'initialisation de Renjin ScriptEngine");
                 resultDTO.setStatus("FAILED");
                 return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(resultDTO);
             }
 
-            System.out.println("Exécution du script R...");
+            logger.info("Exécution du script R...");
             Object result = engine.eval(code);
             String output = result != null ? result.toString() : "No output";
-            System.out.println("Résultat du script R : " + output);
+            logger.info("Résultat du script R : {}", output);
 
             resultDTO.setOutput(output);
             resultDTO.setStatus("SUCCESS");
         } catch (ScriptException e) {
-            System.out.println("Erreur d'exécution R : " + e.getMessage());
-            e.printStackTrace();
+            logger.error("Erreur d'exécution R : {}", e.getMessage(), e);
             resultDTO.setError("Erreur d'exécution R: " + e.getMessage());
             resultDTO.setStatus("FAILED");
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(resultDTO);
         } catch (Exception e) {
-            System.out.println("Erreur serveur inattendue : " + e.getMessage());
-            e.printStackTrace();
+            logger.error("Erreur serveur inattendue : {}", e.getMessage(), e);
             resultDTO.setError("Erreur serveur: " + e.getMessage());
             resultDTO.setStatus("FAILED");
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(resultDTO);
@@ -87,7 +89,6 @@ public class ExecutionController {
         saveExecutionResultToDB(resultDTO);
         return ResponseEntity.ok(resultDTO);
     }
-
     @PostMapping("/executePython")
     @CrossOrigin(origins = "http://localhost:4200")
     public ResponseEntity<ExecutionResultDTO> executePythonCode(@RequestBody Map<String, Object> request) {
@@ -105,8 +106,7 @@ public class ExecutionController {
 
         ExecutionResultDTO resultDTO = new ExecutionResultDTO();
         try {
-            String escapedCode = code.replace("\"", "\\\"").replace("\n", "\\n");
-            String requestBody = "{\"code\": \"" + escapedCode + "\"}";
+            String requestBody = "{\"code\": \"" + code.replace("\"", "\\\"") + "\"}";
             System.out.println("Corps de la requête envoyé : " + requestBody);
 
             HttpHeaders headers = new HttpHeaders();
@@ -235,6 +235,6 @@ public class ExecutionController {
         }
 
         executionResultRepository.save(result);
-        System.out.println("Résultat sauvegardé : " + resultDTO.getOutput());
+        logger.info("Résultat sauvegardé : output={}", resultDTO.getOutput());
     }
 }
