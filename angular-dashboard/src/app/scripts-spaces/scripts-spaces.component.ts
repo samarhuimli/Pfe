@@ -33,20 +33,20 @@ export class ScriptsSpacesComponent {
       
     },
     {
-      title: 'R 4.1',
-      description: 'Start with the latest stable R version.',
+      title: 'R 4.4.0 ',
+      description: 'Start Already Tomorrow',
       author: 'FinConnect ',
     
     },
     {
-      title: 'R 4.1',
-      description: 'Start with the latest stable R version.',
+      title: 'R 4.3.3',
+      description: 'Angel Food Cake',
       author: 'FinConnect ',
       
     },
     {
-      title: 'R 4.1',
-      description: 'Start with the latest stable R version.',
+      title: 'R 4.3.2',
+      description: 'Shortstop Beagle',
       author: 'FinConnect ',
      
     },

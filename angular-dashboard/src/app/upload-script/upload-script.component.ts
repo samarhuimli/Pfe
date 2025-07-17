@@ -1,52 +1,75 @@
-import { Component, Input, Output, EventEmitter } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { FormsModule } from '@angular/forms';
-import { Router } from '@angular/router';
-import { NgForm } from '@angular/forms';
-import { Script, ScriptService } from '../../services/script.service';
-import { ExecutionService } from '../../services/execution.service';
-import { ExecutionResultComponent } from '../../execution-result/execution-result.component';
+import { HttpClientModule } from '@angular/common/http';
+import { FormsModule, NgForm } from '@angular/forms';
+import { Router, RouterModule } from '@angular/router'; // Importation corrigée
+import { DatePipe } from '@angular/common';
+import { ScriptService } from '../services/script.service';
+import { ExecutionService } from '../services/execution.service';
 import { ExecutionResultDTO } from 'src/app/models/execution-result.model';
 
+// Définir l'interface ScriptForm avec un type compatible avec Script
+interface ScriptForm {
+  id?: number;
+  title: string;
+  createdBy: string;
+  type: 'PYTHON' | 'R' | 'SQL'; // Aligné avec le type attendu par Script
+  content: string;
+}
+
 @Component({
-  selector: 'app-script-create',
+  selector: 'app-upload-script',
   standalone: true,
-  imports: [CommonModule, FormsModule, ExecutionResultComponent],
-  templateUrl: './script-create.component.html',
-  styleUrls: ['./script-create.component.scss']
+  imports: [CommonModule, HttpClientModule, FormsModule, RouterModule], // Ajout de RouterModule
+  templateUrl: './upload-script.component.html',
+  styleUrls: ['./upload-script.component.scss'],
+  providers: [DatePipe]
 })
-export class ScriptCreateComponent {
-  executionResult = {
-    title: 'Mon Script',
-    success: false,
-    output: 'Début de l\'exécution...\nCalcul terminé',
-    error: 'Erreur: Division par zéro'
-  };
-
-  currentDate = new Date();
-
-  @Input() form: Script = {
-    title: '',
-    content: '',
-    createdBy: '',
-    type: 'PYTHON'
-  };
-
-  @Input() isEdit = false;
-  @Output() submitFormEvent = new EventEmitter<void>();
-  @Output() cancelEvent = new EventEmitter<void>();
-
+export class UploadScriptComponent implements OnInit {
+  form: ScriptForm = { title: '', createdBy: '', type: 'PYTHON', content: '' }; // Valeur par défaut pour type
+  isEdit = false;
+  isRunning = false;
   output: string = '';
-  isRunning: boolean = false;
+  currentDate = new Date().toISOString();
+  uploadedContent: { name: string; content: string } | null = null;
 
   constructor(
+    private datePipe: DatePipe,
     private scriptService: ScriptService,
-    private router: Router,
+    private router: Router, // Injection corrigée
     private executionService: ExecutionService
   ) {}
 
+  ngOnInit(): void {
+    if (this.isEdit) {
+      // Remplir form avec des données existantes si nécessaire
+    }
+  }
+
+  onFileSelected(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    if (input.files && input.files.length > 0) {
+      const file = input.files[0];
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        this.form.content = e.target?.result as string;
+        this.uploadedContent = { name: file.name, content: this.form.content };
+      };
+      reader.readAsText(file);
+    }
+  }
+
+  uploadFile(): void {
+    if (this.form.content) {
+      console.log('Fichier uploadé avec succès :', this.uploadedContent?.name);
+    }
+  }
+
   async runCode() {
-    if (!this.form.content || !this.form.type) return;
+    if (!this.form.content || !this.form.type) {
+      this.output = 'Erreur: Aucun script ou type non sélectionné.';
+      return;
+    }
 
     const startTime = performance.now();
     this.isRunning = true;
@@ -69,7 +92,6 @@ export class ScriptCreateComponent {
       this.isRunning = false;
     }
   }
-  
 
   private async runPythonCode() {
     try {
@@ -116,30 +138,29 @@ export class ScriptCreateComponent {
   clearEditor() {
     if (!this.form.content || confirm('Voulez-vous vraiment effacer le contenu ?')) {
       this.form.content = '';
+      this.uploadedContent = null;
       this.output = '';
     }
   }
 
-  submitForm(scriptForm: NgForm) {
-    if (scriptForm.invalid) {
-      Object.keys(scriptForm.controls).forEach(key => {
-        scriptForm.controls[key].markAsTouched();
+  submitForm(form: NgForm) {
+    if (form.invalid) {
+      Object.keys(form.controls).forEach(key => {
+        form.controls[key].markAsTouched();
       });
       return;
     }
 
-    if (this.isEdit) {
-      this.scriptService.updateScript(this.form.id!, this.form).subscribe(() => {
+    if (this.isEdit && this.form.id) {
+      this.scriptService.updateScript(this.form.id, { ...this.form } as any).subscribe(() => { // Cast temporaire
         this.saveScriptAndExecution();
-        this.submitFormEvent.emit();
         this.router.navigate(['/scripts']);
       });
     } else {
-      this.scriptService.createScript(this.form).subscribe(newScript => {
+      this.scriptService.createScript({ ...this.form } as any).subscribe(newScript => { // Cast temporaire
         this.form.id = newScript.id;
         this.scriptService.addScriptToLocal(newScript);
         this.saveScriptAndExecution();
-        this.submitFormEvent.emit();
         this.router.navigate(['/scripts']);
       });
     }
@@ -149,7 +170,7 @@ export class ScriptCreateComponent {
     if (!this.form.title || !this.form.content) return;
 
     if (!this.isEdit && !this.form.id) {
-      this.scriptService.createScript(this.form).subscribe(newScript => {
+      this.scriptService.createScript({ ...this.form } as any).subscribe(newScript => {
         this.form.id = newScript.id;
         this.scriptService.addScriptToLocal(newScript);
       });
@@ -172,6 +193,5 @@ export class ScriptCreateComponent {
 
   cancel() {
     this.router.navigate(['/scripts']);
-    this.cancelEvent.emit();
   }
 }

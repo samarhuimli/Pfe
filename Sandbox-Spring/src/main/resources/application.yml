@@ -51,11 +51,22 @@ spring:
         queue-capacity: 100
         thread-name-prefix: app-thread-
 
-  security:
-    oauth2:
-      resourceserver:
-        jwt:
-          issuer-uri: http://localhost:8080/realms/Sandbox
+#  security:
+#    oauth2:
+#      client:
+#        registration:
+#          keycloak:
+#            client-id: spring-boot-app
+#            client-secret: KbhdS3uGvFsENF3tJfACXAerVcekYNCE
+#            authorization-grant-type: authorization_code
+#            scope: openid,profile,email,roles
+#            redirect-uri: "{baseUrl}/login/oauth2/code/keycloak"
+#        provider:
+#          keycloak:
+#            issuer-uri: http://localhost:8080/realms/sandbox-realm
+#      resourceserver:
+#        jwt:
+#          issuer-uri: http://localhost:8080/realms/sandbox-realm
 
 logging:
   level:

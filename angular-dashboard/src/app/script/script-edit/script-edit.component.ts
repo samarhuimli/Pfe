@@ -3,16 +3,11 @@ import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ScriptService, Script } from '../../services/script.service';
-import { ExecutionResultComponent } from '../../execution-result/execution-result.component';
 import { ExecutionService } from 'src/app/services/execution.service';
+import { ExecutionResultComponent } from '../../execution-result/execution-result.component';
 import { NgForm } from '@angular/forms';
 import { ExecutionResultDTO } from 'src/app/models/execution-result.model';
 import { DatePipe } from '@angular/common';
-
-declare function loadPyodide(config: {
-  stdout?: (text: string) => void,
-  stderr?: (text: string) => void
-}): Promise<any>;
 
 @Component({
   selector: 'app-script-edit',
@@ -25,10 +20,10 @@ declare function loadPyodide(config: {
 export class ScriptEditComponent implements OnInit {
   scriptId!: number;
   script: Script = { id: 0, title: '', type: 'PYTHON', createdBy: '', content: '' };
+  isEdit = true;
 
   output: string = '';
   isRunning: boolean = false;
-  pyodide: any = null;
   editorFocused: boolean = false;
   lastRunTime: string | null = null;
   groupedExecutions: any[] = [];
@@ -117,10 +112,10 @@ export class ScriptEditComponent implements OnInit {
 
     switch (this.script.type) {
       case 'PYTHON':
-        this.script.content = `# Python script template\nimport pandas as pd\n\n# Your code here\n`;
+        this.script.content = `# Python script template\n\n# Your code here\nprint("Test")\n`; // Code simple sans dépendances
         break;
       case 'R':
-        this.script.content = `# R script template\nlibrary(tidyverse)\n\n# Your code here\n`;
+        this.script.content = `# R script template\n\n# Your code here\nprint("Test")\n`;
         break;
       case 'SQL':
         this.script.content = `-- SQL script template\nSELECT * FROM table_name\nWHERE condition;\n`;
@@ -147,90 +142,91 @@ export class ScriptEditComponent implements OnInit {
     const startTime = performance.now();
     this.isRunning = true;
     this.output = `Exécution du code ${this.script.type}...\n`;
-    this.lastRunTime = new Date().toLocaleString();
 
     try {
+      console.log('Début de l\'exécution du code:', this.script.type, this.script.content);
       if (this.script.type === 'PYTHON') {
-        if (!this.pyodide) {
-          this.pyodide = await loadPyodide({
-            stdout: (text: string) => this.output += text,
-            stderr: (text: string) => this.output += text
-          });
-          await this.pyodide.loadPackage(['numpy']);
-        }
-
-        const result = await this.pyodide.runPython(this.script.content);
-        if (result) this.output += '\nRésultat: ' + result;
-
-        const executionTime = Math.round(performance.now() - startTime);
-        this.executionService.saveExecutionResult({
-          scriptId: this.script.id,
-          output: this.output,
-          status: 'SUCCESS',
-          executionTime: executionTime
-        }).subscribe({
-          next: () => this.loadExecutions(),
-          error: (err) => console.error('Erreur lors de la sauvegarde:', err)
-        });
+        await this.runPythonCode();
       } else if (this.script.type === 'R') {
-        const response = await this.executionService.executeRCode(this.script.content, this.script.id).toPromise();
-        if (response.status === 'FAILED' || response.error) {
-          this.output += '\nErreur: ' + (response.error || 'Erreur inconnue lors de l\'exécution R');
-          const executionTime = response.executionTime ?? Math.round(performance.now() - startTime);
-          this.executionService.saveExecutionResult({
-            scriptId: this.script.id,
-            output: this.output,
-            error: response.error,
-            status: 'FAILED',
-            executionTime: executionTime
-          }).subscribe({
-            next: () => this.loadExecutions(),
-            error: (err) => console.error('Erreur lors de la sauvegarde:', err)
-          });
-        } else {
-          this.output += '\nRésultat: ' + response.output;
-          const executionTime = response.executionTime ?? Math.round(performance.now() - startTime);
-          this.executionService.saveExecutionResult({
-            scriptId: this.script.id,
-            output: response.output,
-            status: 'SUCCESS',
-            executionTime: executionTime
-          }).subscribe({
-            next: () => this.loadExecutions(),
-            error: (err) => console.error('Erreur lors de la sauvegarde:', err)
-          });
-        }
+        await this.runRCode();
       } else {
         throw new Error('Type de script non supporté');
       }
+
+      const executionTime = performance.now() - startTime;
+      this.output += `\nTemps d'exécution: ${executionTime} ms`;
+      this.lastRunTime = new Date().toLocaleString();
+      this.saveExecutionResult('SUCCESS', null, executionTime);
     } catch (error: any) {
       this.output += '\nErreur: ' + error.message;
-      const executionTime = Math.round(performance.now() - startTime);
-      this.executionService.saveExecutionResult({
-        scriptId: this.script.id,
-        output: this.output,
-        error: error.message,
-        status: 'FAILED',
-        executionTime: executionTime
-      }).subscribe({
-        next: () => this.loadExecutions(),
-        error: (err) => console.error('Erreur lors de la sauvegarde:', err)
-      });
+      const executionTime = performance.now() - startTime;
+      this.lastRunTime = new Date().toLocaleString();
+      this.saveExecutionResult('FAILED', error.message, executionTime);
     } finally {
       this.isRunning = false;
     }
   }
 
+  private async runPythonCode() {
+    try {
+      console.log('Tentative d\'envoi du code Python au backend:', this.script.content);
+      const response = await this.executionService.executePythonCode(this.script.content, this.script.id).toPromise();
+      console.log('Réponse reçue du backend:', response);
+      if (response && response.status) {
+        if (response.status === 'SUCCESS') {
+          this.output += '\nRésultat: ' + (response.output || 'Aucun résultat');
+        } else {
+          this.output += '\nErreur: ' + (response.error || 'Erreur inconnue');
+        }
+      } else {
+        throw new Error('Réponse du backend invalide');
+      }
+    } catch (error: any) {
+      this.output += '\nErreur: Échec de la connexion au serveur Python - ' + error.message;
+      console.error('Erreur HTTP ou backend:', error);
+      throw error;
+    }
+  }
+
+  private async runRCode() {
+    try {
+      console.log('Tentative d\'envoi du code R au backend:', this.script.content);
+      const response = await this.executionService.executeRCode(this.script.content, this.script.id).toPromise();
+      if (response && typeof response === 'object') {
+        if (response.error) {
+          this.output += '\nErreur: ' + response.error;
+        } else {
+          this.output += '\nRésultat: ' + (response.output || 'Aucun résultat');
+        }
+      } else {
+        throw new Error('Réponse du backend invalide');
+      }
+    } catch (error: any) {
+      this.output += '\nErreur: Échec de la connexion au serveur R - ' + error.message;
+      console.error('Erreur HTTP ou backend:', error);
+      throw error;
+    }
+  }
+
+  private saveExecutionResult(status: string, error: string | null, executionTime: number) {
+    const executionResult: ExecutionResultDTO = {
+      scriptId: this.script.id,
+      output: this.output,
+      status: status,
+      error: error,
+      executionTime: Math.round(executionTime)
+    };
+
+    this.executionService.saveExecutionResult(executionResult).subscribe({
+      next: () => this.loadExecutions(),
+      error: (err) => console.error('Erreur lors de la sauvegarde:', err)
+    });
+  }
+
   saveToFile() {
     if (!this.script.content) return;
 
-    let extension = '.txt';
-    switch (this.script.type) {
-      case 'PYTHON': extension = '.py'; break;
-      case 'R': extension = '.r'; break;
-      case 'SQL': extension = '.sql'; break;
-    }
-
+    const extension = this.script.type === 'R' ? '.r' : this.script.type === 'SQL' ? '.sql' : '.py';
     const filename = this.script.title
       ? `${this.script.title.replace(/[^a-z0-9]/gi, '_')}${extension}`
       : `script${extension}`;
@@ -251,14 +247,25 @@ export class ScriptEditComponent implements OnInit {
     }
   }
 
-  saveScript() {
-    if (!this.script.title || !this.script.type || !this.script.createdBy || !this.script.content) {
+  submitForm(scriptForm: NgForm) {
+    if (scriptForm.invalid) {
+      Object.keys(scriptForm.controls).forEach(key => {
+        scriptForm.controls[key].markAsTouched();
+      });
       return;
     }
 
-    this.scriptService.updateScript(this.scriptId, this.script).subscribe(() => {
-      this.router.navigate(['/scripts']);
-    });
+    if (this.isEdit) {
+      this.scriptService.updateScript(this.scriptId, this.script).subscribe(() => {
+        this.router.navigate(['/scripts']);
+      });
+    } else {
+      this.scriptService.createScript(this.script).subscribe(newScript => {
+        this.script.id = newScript.id;
+        this.scriptService.addScriptToLocal(newScript);
+        this.router.navigate(['/scripts']);
+      });
+    }
   }
 
   cancel() {
@@ -279,5 +286,10 @@ export class ScriptEditComponent implements OnInit {
         console.error('Erreur lors de la suppression:', err);
       }
     });
+  }
+
+  // Méthode pour gérer la date
+  getExecutionDate(): Date | null {
+    return this.lastRunTime ? new Date(this.lastRunTime) : null;
   }
 }

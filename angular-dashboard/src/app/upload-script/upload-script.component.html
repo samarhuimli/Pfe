@@ -1,0 +1,90 @@
+<div class="container">
+  <div class="card">
+    <div class="card-header">
+      {{ isEdit ? 'Modifier le Script' : 'Télécharger un Script' }}
+    </div>
+    <div class="card-body">
+      <form (ngSubmit)="submitForm(scriptForm)" #scriptForm="ngForm" class="row g-3">
+        <div class="col-md-6">
+          <label for="title" class="form-label">Titre</label>
+          <input type="text" class="form-control" id="title" [(ngModel)]="form.title" name="title" required #title="ngModel">
+          <div *ngIf="title.invalid && (title.dirty || title.touched)" class="text-danger">
+            Le titre est requis
+          </div>
+        </div>
+
+        <div class="col-md-6">
+          <label for="createdBy" class="form-label">Créé par</label>
+          <input type="text" class="form-control" id="createdBy" [(ngModel)]="form.createdBy" name="createdBy" required #createdBy="ngModel">
+          <div *ngIf="createdBy.invalid && (createdBy.dirty || createdBy.touched)" class="text-danger">
+            Le créateur est requis
+          </div>
+        </div>
+
+        <div class="col-md-6">
+          <label for="type" class="form-label">Type de script</label>
+          <select id="type" class="form-select" [(ngModel)]="form.type" name="type" required #type="ngModel">
+            <option value="">Sélectionnez un type</option>
+            <option value="PYTHON">Python</option>
+            <option value="R">R</option>
+            <option value="SQL">SQL</option>
+          </select>
+          <div *ngIf="type.invalid && (type.dirty || type.touched)" class="text-danger">
+            Le type est requis
+          </div>
+        </div>
+
+        <div class="col-12">
+          <label for="fileUpload" class="form-label">Uploader un Script</label>
+          <div class="input-group">
+            <input type="file" class="form-control" id="fileUpload" (change)="onFileSelected($event)" accept=".py,.r,.sql" required>
+            <button class="btn btn-primary" type="button" (click)="uploadFile()" [disabled]="!form.content || scriptForm.invalid">
+              <i class="bi bi-upload"></i> Uploader
+            </button>
+          </div>
+          <div *ngIf="scriptForm.submitted && !form.content" class="text-danger">
+            Un fichier est requis
+          </div>
+          <div *ngIf="uploadedContent" class="mt-2 text-success">
+            Fichier chargé : {{ uploadedContent.name }}
+          </div>
+        </div>
+
+        <!-- Actions sur le code -->
+        <div class="col-12">
+          <div class="button-group">
+            <button class="btn btn-success" type="button" (click)="runCode()" [disabled]="isRunning || scriptForm.invalid || !form.content">
+              <i class="bi bi-play-fill"></i> Exécuter
+            </button>
+            <!-- <button class="btn btn-outline-primary" type="button" (click)="saveToFile()" [disabled]="scriptForm.invalid || !form.content">
+              <i class="bi bi-download"></i> Télécharger
+            </button> -->
+            <!-- <button class="btn btn-outline-secondary" type="button" (click)="clearEditor()">
+              <i class="bi bi-trash3"></i> Effacer
+            </button> -->
+          </div>
+        </div>
+
+        <!-- Résultats d'exécution -->
+        <div class="col-12" *ngIf="output">
+          <div class="output-panel" [class.error]="output.includes('Erreur:')" [class.success]="!output.includes('Erreur:')">
+            <!-- Supprime temporairement app-execution-result si non défini -->
+            <div [ngClass]="{'text-success': !output.includes('Erreur:'), 'text-danger': output.includes('Erreur:')}">
+              {{ output }}
+            </div>
+          </div>
+        </div>
+
+        <!-- Boutons de soumission -->
+        <div class="col-12 d-flex justify-content-end gap-3 mt-4">
+          <button type="button" class="btn btn-secondary" (click)="cancel()">
+            <i class="bi bi-x-circle"></i> Annuler
+          </button>
+          <button type="submit" class="btn btn-primary" [disabled]="scriptForm.invalid || !form.content">
+            <i class="bi bi-save"></i> {{ isEdit ? 'Mettre à jour' : 'Enregistrer' }}
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>

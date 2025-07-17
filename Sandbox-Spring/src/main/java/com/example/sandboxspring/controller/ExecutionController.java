@@ -3,23 +3,29 @@ package com.example.sandboxspring.controller;
 import com.example.sandboxspring.ExecutionDTO;
 import com.example.sandboxspring.ExecutionGroupDTO;
 import com.example.sandboxspring.ExecutionResultDTO;
+import com.example.sandboxspring.entity.ExecutionLog;
 import com.example.sandboxspring.entity.ExecutionResult;
 import com.example.sandboxspring.entity.Script;
 import com.example.sandboxspring.exception.ResourceNotFoundException;
+import com.example.sandboxspring.repository.ExecutionLogRepository;
 import com.example.sandboxspring.repository.ExecutionResultRepository;
 import com.example.sandboxspring.repository.ScriptRepository;
+import com.example.sandboxspring.security.SecurityManager;
+import com.example.sandboxspring.service.ExecutionService;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
-import org.renjin.script.RenjinScriptEngineFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.*;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
 
-import javax.script.ScriptEngine;
-import javax.script.ScriptException;
 import java.time.LocalDateTime;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -30,12 +36,18 @@ import java.util.stream.Collectors;
 public class ExecutionController {
 
     private static final Logger logger = LoggerFactory.getLogger(ExecutionController.class);
-
+    private final ExecutionService executionService;
     private final ExecutionResultRepository executionResultRepository;
     private final ScriptRepository scriptRepository;
-    private final RestTemplate restTemplate = new RestTemplate();
-
+    private final RestTemplate restTemplate;
+    private final SecurityManager securityManager;
+    private final ExecutionLogRepository executionLogRepository;
     private static final String PYTHON_API_URL = "http://python-api:8083/execute";
+
+    @PostConstruct
+    public void init() {
+        logger.info("SecurityManager injecté avec succès : {}", securityManager);
+    }
 
     @PostMapping("/executeR")
     @CrossOrigin(origins = "http://localhost:4200")
@@ -47,39 +59,91 @@ public class ExecutionController {
         if (code == null || code.trim().isEmpty()) {
             errorDTO.setError("Erreur: Le code R est vide ou absent.");
             errorDTO.setStatus("FAILED");
+            saveExecutionLog("Code R vide ou absent", ExecutionLog.ExecutionType.R);
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errorDTO);
         }
 
         logger.info("Script R reçu : code={}, scriptId={}", code, scriptId);
 
+        // Validation du script avec SecurityManager
+        logger.info("Début de la validation du script : {}", code);
+        String validationError = securityManager.validateScript(code);
+        logger.info("Résultat de la validation : {}", validationError);
+        if (validationError != null) {
+            errorDTO.setError(validationError);
+            errorDTO.setStatus("FAILED");
+            saveExecutionLog("Validation échouée: " + validationError, ExecutionLog.ExecutionType.R);
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errorDTO);
+        }
+
         ExecutionResultDTO resultDTO = new ExecutionResultDTO();
         try {
-            RenjinScriptEngineFactory factory = new RenjinScriptEngineFactory();
-            ScriptEngine engine = factory.getScriptEngine();
+            saveExecutionLog("Début de l'exécution R pour code: " + code, ExecutionLog.ExecutionType.R);
 
-            if (engine == null) {
-                logger.error("Erreur : Renjin ScriptEngine est null");
-                resultDTO.setError("Erreur: Échec de l'initialisation de Renjin ScriptEngine");
+            String escapedCode = code
+                    .replace("\\", "\\\\")
+                    .replace("\"", "\\\"")
+                    .replace("\n", "\\n")
+                    .replace("\r", "\\r")
+                    .replace("\t", "\\t")
+                    .replace("\b", "\\b")
+                    .replace("\f", "\\f");
+            String requestBody = "{\"code\": \"" + escapedCode + "\"}";
+            logger.info("Corps de la requête envoyé : {}", requestBody);
+
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.APPLICATION_JSON);
+            HttpEntity<String> entity = new HttpEntity<>(requestBody, headers);
+
+            String rApiUrl = "http://r-api:8086/execute";
+            logger.info("Tentative de connexion à l'API R avec URL : {}", rApiUrl);
+            ResponseEntity<String> response = restTemplate.postForEntity(rApiUrl, entity, String.class);
+            String responseBody = response.getBody();
+
+            logger.info("Réponse brute de r-api : {}", responseBody);
+
+            if (responseBody != null && response.getStatusCode() == HttpStatus.OK) {
+                ObjectMapper mapper = new ObjectMapper();
+                Map<String, Object> jsonMap = mapper.readValue(responseBody, new TypeReference<Map<String, Object>>(){});
+                String output = (jsonMap.get("output") != null) ? jsonMap.get("output").toString() : "No output";
+                String error = (jsonMap.get("error") != null) ? jsonMap.get("error").toString() : "";
+                String status = (jsonMap.get("status") != null) ? jsonMap.get("status").toString() : "FAILED";
+
+                logger.info("Réponse parsed - output: {}, error: {}, status: {}", output, error, status);
+
+                if ("SUCCESS".equals(status)) {
+                    resultDTO.setOutput(output);
+                    resultDTO.setStatus("SUCCESS");
+                    saveExecutionLog("Exécution R réussie : " + output, ExecutionLog.ExecutionType.R);
+                } else {
+                    resultDTO.setError(error);
+                    resultDTO.setStatus("FAILED");
+                    saveExecutionLog("Erreur d'exécution R : " + error, ExecutionLog.ExecutionType.R);
+                }
+            } else {
+                resultDTO.setError("Erreur: Échec de la communication avec l'API R - Statut: " + response.getStatusCodeValue());
                 resultDTO.setStatus("FAILED");
+                saveExecutionLog("Échec de la communication avec l'API R: Statut " + response.getStatusCodeValue(), ExecutionLog.ExecutionType.R);
                 return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(resultDTO);
             }
 
-            logger.info("Exécution du script R...");
-            Object result = engine.eval(code);
-            String output = result != null ? result.toString() : "No output";
-            logger.info("Résultat du script R : {}", output);
-
-            resultDTO.setOutput(output);
-            resultDTO.setStatus("SUCCESS");
-        } catch (ScriptException e) {
-            logger.error("Erreur d'exécution R : {}", e.getMessage(), e);
-            resultDTO.setError("Erreur d'exécution R: " + e.getMessage());
-            resultDTO.setStatus("FAILED");
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(resultDTO);
-        } catch (Exception e) {
-            logger.error("Erreur serveur inattendue : {}", e.getMessage(), e);
+        } catch (HttpClientErrorException e) {
+            logger.error("Erreur client avec l'API R : {}, Body: {}", e.getMessage(), e.getResponseBodyAsString());
             resultDTO.setError("Erreur serveur: " + e.getMessage());
             resultDTO.setStatus("FAILED");
+            saveExecutionLog("Erreur client avec l'API R: " + e.getMessage(), ExecutionLog.ExecutionType.R);
+            return ResponseEntity.status(e.getStatusCode()).body(resultDTO);
+        } catch (RestClientException e) {
+            logger.error("Erreur de communication avec l'API R : {}", e.getMessage(), e);
+            resultDTO.setError("Erreur serveur: " + e.getMessage());
+            resultDTO.setStatus("FAILED");
+            saveExecutionLog("Erreur de communication avec l'API R: " + e.getMessage(), ExecutionLog.ExecutionType.R);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(resultDTO);
+        } catch (Exception e) {
+            logger.error("Erreur serveur inattendue : {}, Stacktrace: {}", e.getMessage(), e);
+            resultDTO.setError("Erreur serveur: " + e.getMessage());
+            resultDTO.setStatus("FAILED");
+            saveExecutionLog("Erreur serveur inattendue: " + e.getMessage(), ExecutionLog.ExecutionType.R);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(resultDTO);
         }
 
@@ -87,8 +151,10 @@ public class ExecutionController {
         resultDTO.setScriptId(scriptId);
 
         saveExecutionResultToDB(resultDTO);
+        saveExecutionLog("Exécution R terminée - Output: " + resultDTO.getOutput(), ExecutionLog.ExecutionType.R);
         return ResponseEntity.ok(resultDTO);
     }
+
     @PostMapping("/executePython")
     @CrossOrigin(origins = "http://localhost:4200")
     public ResponseEntity<ExecutionResultDTO> executePythonCode(@RequestBody Map<String, Object> request) {
@@ -99,15 +165,37 @@ public class ExecutionController {
         if (code == null || code.trim().isEmpty()) {
             errorDTO.setError("Erreur: Le code Python est vide ou absent.");
             errorDTO.setStatus("FAILED");
+            saveExecutionLog("Code Python vide ou absent", ExecutionLog.ExecutionType.PYTHON);
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errorDTO);
         }
 
-        System.out.println("Script Python reçu : " + code + ", scriptId: " + scriptId);
+        logger.info("Script Python reçu : code={}, scriptId={}", code, scriptId);
+
+        // Validation du script avec SecurityManager
+        logger.info("Début de la validation du script : {}", code);
+        String validationError = securityManager.validateScript(code);
+        logger.info("Résultat de la validation : {}", validationError);
+        if (validationError != null) {
+            errorDTO.setError(validationError);
+            errorDTO.setStatus("FAILED");
+            saveExecutionLog("Validation échouée: " + validationError, ExecutionLog.ExecutionType.PYTHON);
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errorDTO);
+        }
 
         ExecutionResultDTO resultDTO = new ExecutionResultDTO();
         try {
-            String requestBody = "{\"code\": \"" + code.replace("\"", "\\\"") + "\"}";
-            System.out.println("Corps de la requête envoyé : " + requestBody);
+            saveExecutionLog("Début de l'exécution Python pour code: " + code, ExecutionLog.ExecutionType.PYTHON);
+
+            String escapedCode = code
+                    .replace("\\", "\\\\")
+                    .replace("\"", "\\\"")
+                    .replace("\n", "\\n")
+                    .replace("\r", "\\r")
+                    .replace("\t", "\\t")
+                    .replace("\b", "\\b")
+                    .replace("\f", "\\f");
+            String requestBody = "{\"code\": \"" + escapedCode + "\"}";
+            logger.info("Corps de la requête envoyé : {}", requestBody);
 
             HttpHeaders headers = new HttpHeaders();
             headers.setContentType(MediaType.APPLICATION_JSON);
@@ -122,23 +210,26 @@ public class ExecutionController {
                 String status = (String) responseBody.get("status");
 
                 if ("SUCCESS".equals(status)) {
-                    resultDTO.setOutput(output);
+                    resultDTO.setOutput(output != null ? output : "No output");
                     resultDTO.setStatus("SUCCESS");
+                    saveExecutionLog("Exécution Python réussie : " + output, ExecutionLog.ExecutionType.PYTHON);
                 } else {
-                    resultDTO.setError(error);
+                    resultDTO.setError(error != null ? error : "Opération non autorisée");
                     resultDTO.setStatus("FAILED");
+                    saveExecutionLog("Erreur d'exécution Python : " + error, ExecutionLog.ExecutionType.PYTHON);
                 }
             } else {
-                resultDTO.setError("Erreur: Échec de la communication avec le service Python");
+                resultDTO.setError("Erreur: Échec de la communication avec le service Python - Statut: " + response.getStatusCodeValue());
                 resultDTO.setStatus("FAILED");
+                saveExecutionLog("Échec de la communication avec le service Python: Statut " + response.getStatusCodeValue(), ExecutionLog.ExecutionType.PYTHON);
                 return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(resultDTO);
             }
 
         } catch (Exception e) {
-            System.out.println("Erreur d'exécution Python via Docker : " + e.getMessage());
-            e.printStackTrace();
+            logger.error("Erreur d'exécution Python via Docker : {}", e.getMessage(), e);
             resultDTO.setError("Erreur serveur: " + e.getMessage());
             resultDTO.setStatus("FAILED");
+            saveExecutionLog("Erreur d'exécution Python: " + e.getMessage(), ExecutionLog.ExecutionType.PYTHON);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(resultDTO);
         }
 
@@ -146,8 +237,10 @@ public class ExecutionController {
         resultDTO.setScriptId(scriptId);
 
         saveExecutionResultToDB(resultDTO);
+        saveExecutionLog("Exécution Python terminée - Output: " + resultDTO.getOutput(), ExecutionLog.ExecutionType.PYTHON);
         return ResponseEntity.ok(resultDTO);
     }
+
     @PostMapping("/save")
     public ResponseEntity<ExecutionResultDTO> saveExecutionResult(@RequestBody ExecutionResultDTO resultDTO) {
         ExecutionResult result = new ExecutionResult();
@@ -197,6 +290,47 @@ public class ExecutionController {
                     return dto;
                 })
                 .collect(Collectors.toList());
+    }
+
+    @GetMapping("/countstatus/{status}")
+    public int countByStatus(@PathVariable String status) {
+        return executionService.countByStatus(status);
+    }
+
+    @GetMapping("/execution-logs")
+    @CrossOrigin(origins = "http://localhost:4200")
+    public ResponseEntity<List<ExecutionLog>> getExecutionLogs() {
+        List<ExecutionLog> logs = executionLogRepository.findAll();
+        return ResponseEntity.ok(logs);
+    }
+
+    @DeleteMapping("/clear-execution-logs")
+    @CrossOrigin(origins = "http://localhost:4200")
+    public ResponseEntity<Void> clearExecutionLogs() {
+        executionLogRepository.deleteAll();
+        return ResponseEntity.noContent().build();
+    }
+
+    @DeleteMapping("/execution-logs/{id}")
+    @CrossOrigin(origins = "http://localhost:4200")
+    public ResponseEntity<Void> deleteExecutionLog(@PathVariable Long id) {
+        ExecutionLog log = executionLogRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Log non trouvé avec l'ID: " + id));
+        executionLogRepository.delete(log);
+        return ResponseEntity.noContent().build();
+    }
+
+    private void saveExecutionLog(String message, ExecutionLog.ExecutionType type) {
+        ExecutionLog log = new ExecutionLog();
+        log.setMessage(message);
+        log.setTimestamp(LocalDateTime.now());
+        log.setExecutionType(type);
+        try {
+            executionLogRepository.save(log);
+            logger.info("Log sauvegardé avec succès : message={}, type={}", message, type);
+        } catch (Exception e) {
+            logger.error("Échec de la sauvegarde du log : {}, erreur={}", message, e.getMessage(), e);
+        }
     }
 
     private ExecutionResultDTO convertToDTO(ExecutionResult entity) {

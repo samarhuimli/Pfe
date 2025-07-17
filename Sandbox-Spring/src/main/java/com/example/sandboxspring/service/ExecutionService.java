@@ -86,4 +86,9 @@ public class ExecutionService {
     private String executeSQLScript(String content) {
         return "SQL Execution Result:\n" + content;
     }
+
+
+    public int countByStatus(String status ){
+        return executionResultRepository.countByStatus(status);
+    }
 }

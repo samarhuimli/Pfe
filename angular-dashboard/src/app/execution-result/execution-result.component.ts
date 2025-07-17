@@ -49,6 +49,44 @@ export class ExecutionResultComponent implements OnChanges {
     }
   }
 
+  exportToCSV(): void {
+  if (!this.executions || this.executions.length === 0) {
+    console.warn('Aucune exécution à exporter.');
+    return;
+  }
+
+  // Création de l'en-tête CSV
+  const headers = ['Succès', 'Résultat', 'Erreur', 'Date', 'Créé par'];
+  const csvRows = [headers.join(';')]; // Utilise ; pour la compatibilité FR
+
+  // Transformation des données
+  for (const exec of this.executions) {
+    const row = [
+      exec.success ? 'Succès' : 'Échec',
+      `"${(exec.output || '').replace(/"/g, '""')}"`, // Échapper les guillemets
+      `"${(exec.error || '').replace(/"/g, '""')}"`,
+      exec.date ? new Date(exec.date).toLocaleString() : '',
+      exec.createdBy || ''
+    ];
+    csvRows.push(row.join(';'));
+  }
+
+  // Création du blob CSV
+  const csvContent = csvRows.join('\n');
+  const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+  const url = window.URL.createObjectURL(blob);
+
+  // Création du lien de téléchargement
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = 'executions.csv';
+  link.click();
+
+  // Nettoyage
+  window.URL.revokeObjectURL(url);
+}
+
+
   toggleCollapse(index: number): void {
     this.collapseStates[index] = !this.collapseStates[index];
   }

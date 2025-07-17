@@ -1,0 +1,57 @@
+.container {
+  padding: 20px;
+  background-color: #f8f9fa;
+  border-radius: 8px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.table {
+  margin-top: 20px;
+  border-radius: 8px;
+  overflow: hidden; // Pour arrondir les coins du tableau
+}
+
+.table-dark th {
+  background-color: #ffffff !important; // Fond sombre personnalisé
+  color: #1965ac !important; // Texte blanc garanti
+  font-weight: 600; // Police plus épaisse
+}
+
+.badge {
+  padding: 6px 12px;
+  border-radius: 12px;
+  font-size: 0.9rem;
+  text-transform: uppercase; // Texte en majuscules pour un look pro
+  font-weight: 500;
+}
+
+.btn {
+  margin-right: 5px;
+  transition: all 0.3s ease; // Animation au survol
+}
+
+.btn:hover {
+  transform: translateY(-2px); // Lève légèrement le bouton
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.btn-outline-danger {
+  border-color: #dc3545;
+  color: #dc3545;
+}
+
+.btn-outline-danger:hover {
+  background-color: #dc3545;
+  color: #ffffff;
+}
+
+.alert {
+  margin-top: 20px;
+  border-radius: 8px;
+  font-size: 1rem;
+}
+
+.table-hover tbody tr:hover {
+  background-color: #e9ecef; // Survol des lignes avec une couleur douce
+  cursor: pointer; // Curseur pour indiquer l'interactivité
+}

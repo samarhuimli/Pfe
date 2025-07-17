@@ -48,6 +48,7 @@ const routes: Routes = [
         path: 'execution-history',
         loadComponent: () => import('./execution-history/execution-history.component').then(c => c.ExecutionHistoryComponent)
       },
+      
       {
         path: 'scripts/edit/:id',
         loadComponent: () => import('./script/script-edit/script-edit.component').then(c => c.ScriptEditComponent)
@@ -55,7 +56,22 @@ const routes: Routes = [
       {
         path: 'scripts-spaces',
         loadComponent: () => import('./scripts-spaces/scripts-spaces.component').then((c) => c.ScriptsSpacesComponent)
+      },
+     {
+        path: 'logs',
+        loadComponent: () => import('./admin-logs/admin-logs.component').then((c) => c.AdminLogsComponent) // Ajout corrigé
+      },
+       {
+        path: 'upload-script',
+        loadComponent: () => import('./upload-script/upload-script.component').then((c) => c. UploadScriptComponent) // Ajout corrigé
+      },
+
+       {
+        path: 'security',
+        loadComponent: () => import('./security-manager/security-manager.component').then((c) => c. SecurityManagerComponent) // Ajout corrigé
       }
+
+
     ]
   }
 ];

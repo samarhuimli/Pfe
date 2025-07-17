@@ -51,20 +51,22 @@ export const NavigationItems: NavigationItem[] = [
         url: '/scripts-spaces',
         icon: 'font-size'
       },
-      {
-        id: 'color',
-        title: 'Execution History',
-        type: 'item',
-        classes: 'nav-item',
-        url: '/execution-history',
-        icon: 'bg-colors'
-      },
+      
       {
         id: 'tabler',
         title: 'Scripts',
         type: 'item',
         classes: 'nav-item',
         url: '/scripts',
+        icon: 'ant-design',
+       
+      },
+      {
+        id: 'tabler',
+        title: 'upload script',
+        type: 'item',
+        classes: 'nav-item',
+        url: '/upload-script',
         icon: 'ant-design',
        
       }
@@ -77,6 +79,33 @@ export const NavigationItems: NavigationItem[] = [
     type: 'group',
     icon: 'icon-navigation',
     children: [
+      {
+        id: 'color',
+        title: 'Execution History',
+        type: 'item',
+        classes: 'nav-item',
+        url: '/execution-history',
+        icon: 'bg-colors'
+      },
+      {
+        id: 'tabler',
+        title: 'Logs',
+        type: 'item',
+        classes: 'nav-item',
+        url: '/logs',
+        icon: 'ant-design',
+       
+      },
+      {
+        id: 'tabler',
+        title: 'Security Manager',
+        type: 'item',
+        classes: 'nav-item',
+        url: '/security',
+        icon: 'ant-design',
+       
+      }
+
       
     
     ]

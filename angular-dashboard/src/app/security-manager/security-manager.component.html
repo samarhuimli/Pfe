@@ -1,0 +1,42 @@
+<div class="container">
+  <h1 class="title">Security Manager Admin</h1>
+
+  <!-- Section pour les tables interdites -->
+  <div class="section">
+    <h2 class="subtitle">Ajouter des Tables Interdites</h2>
+    <input
+      type="text"
+      [(ngModel)]="newForbiddenTable"
+      placeholder="Nom de la table"
+      class="input-field"
+    />
+    <button (click)="addForbiddenTable()" class="add-btn">Ajouter</button>
+    <ul class="list">
+      <li *ngFor="let table of forbiddenTables" class="list-item">
+        {{ table }}
+        <button (click)="removeForbiddenTable(table)" class="remove-btn">Supprimer</button>
+      </li>
+    </ul>
+  </div>
+
+  <!-- Section pour les opérations autorisées -->
+  <div class="section">
+    <h2 class="subtitle">Ajouter des Opérations Autorisées</h2>
+    <input
+      type="text"
+      [(ngModel)]="newAllowedOperation"
+      placeholder="Nom de l'opération"
+      class="input-field"
+    />
+    <button (click)="addAllowedOperation()" class="add-btn">Ajouter</button>
+    <ul class="list">
+      <li *ngFor="let operation of allowedOperations" class="list-item">
+        {{ operation }}
+        <button (click)="removeAllowedOperation(operation)" class="remove-btn">Supprimer</button>
+      </li>
+    </ul>
+  </div>
+
+  <!-- Bouton de sauvegarde -->
+  <button (click)="saveConfig()" class="save-btn">Sauvegarder</button>
+</div>

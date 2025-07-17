@@ -20,6 +20,7 @@ import { FormsModule } from '@angular/forms';
     BrowserModule, 
     FormsModule,
     AppRoutingModule, 
+    
     SharedModule, 
     BrowserAnimationsModule, 
     HttpClientModule,
@@ -30,3 +31,6 @@ import { FormsModule } from '@angular/forms';
   bootstrap: [AppComponent]
 })
 export class AppModule {}
+
+
+

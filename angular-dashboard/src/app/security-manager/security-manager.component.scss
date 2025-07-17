@@ -1,0 +1,134 @@
+/* Réinitialisation de base et styles globaux */
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+.container {
+  max-width: 800px;
+  margin: 20px auto;
+  padding: 20px;
+  background-color: #f7fafc;
+  border-radius: 8px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.title {
+  color: #2d3748;
+  text-align: center;
+  margin-bottom: 20px;
+  font-family: 'Arial', sans-serif;
+  font-size: 24px;
+  font-weight: bold;
+}
+
+.subtitle {
+  color: #4a5568;
+  margin-bottom: 10px;
+  font-family: 'Arial', sans-serif;
+  font-size: 18px;
+}
+
+.section {
+  margin-bottom: 20px;
+}
+
+.input-field {
+  width: 70%;
+  padding: 8px 12px;
+  border: 1px solid #e2e8f0;
+  border-radius: 4px;
+  font-size: 14px;
+  transition: border-color 0.3s ease;
+}
+
+.input-field:focus {
+  outline: none;
+  border-color: #63b3ed;
+  box-shadow: 0 0 0 2px rgba(99, 179, 237, 0.2);
+}
+
+.add-btn {
+  padding: 8px 16px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: 500;
+  background-color: #3182ce;
+  color: white;
+  transition: background-color 0.3s ease, transform 0.1s ease;
+}
+
+.add-btn:hover {
+  background-color: #2b6cb0;
+  transform: translateY(-1px);
+}
+
+.save-btn {
+  padding: 8px 16px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: 500;
+  background-color: #48bb78;
+  color: white;
+  transition: background-color 0.3s ease, transform 0.1s ease;
+}
+
+.save-btn:hover {
+  background-color: #38a169;
+  transform: translateY(-1px);
+}
+
+.remove-btn {
+  color: #e53e3e;
+  background: none;
+  padding: 2px 6px;
+  border: none;
+  cursor: pointer;
+  transition: color 0.3s ease;
+}
+
+.remove-btn:hover {
+  color: #c53030;
+}
+
+.list {
+  list-style-type: none;
+  padding-left: 0;
+}
+
+.list-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px;
+  background-color: #edf2f7;
+  border-radius: 4px;
+  margin-bottom: 8px;
+  transition: background-color 0.3s ease;
+}
+
+.list-item:hover {
+  background-color: #e2e8f0;
+}
+
+/* Responsive Design */
+@media (max-width: 640px) {
+  .container {
+    margin: 10px;
+    padding: 10px;
+  }
+
+  .input-field {
+    width: 100%;
+    margin-bottom: 10px;
+  }
+
+  .add-btn,
+  .save-btn {
+    width: 100%;
+    margin-top: 10px;
+  }
+}

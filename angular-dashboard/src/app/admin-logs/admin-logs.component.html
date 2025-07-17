@@ -1,0 +1,55 @@
+<div class="container mt-4">
+  <h2 class="mb-4 text-primary fw-bold">Gestion des Logs d'Exécution</h2>
+
+  @if (errorMessage) {
+    <div class="alert alert-danger mb-4">{{ errorMessage }}</div>
+  }
+
+  <div class="mb-4 d-flex justify-content-end">
+    <button class="btn btn-danger" (click)="clearAllLogs()">
+      <i class="bi bi-trash"></i> Supprimer Tous les Logs
+    </button>
+  </div>
+
+  @if (logs.length > 0) {
+    <div class="table-responsive">
+      <table class="table table-striped table-hover">
+        <thead class="table-dark text-white">
+          <tr>
+            <th>ID</th>
+            <th>Message</th>
+            <th>Date/Heure</th>
+            <th>Type</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (log of logs; track log.id) {
+            <tr>
+              <td>{{ log.id }}</td>
+              <td>{{ log.message }}</td>
+              <td>{{ formatDate(log.timestamp) }}</td>
+              <td>
+                <span class="badge" [ngClass]="{
+                  'bg-primary': log.executionType === 'PYTHON',
+                  'bg-success': log.executionType === 'R'
+                }">
+                  {{ log.executionType }}
+                </span>
+              </td>
+              <td>
+                <button class="btn btn-sm btn-outline-danger" (click)="deleteLog(log.id)">
+                  <i class="bi bi-trash"></i>
+                </button>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  } @else {
+    <div class="alert alert-info">
+      Aucun log disponible.
+    </div>
+  }
+</div>
