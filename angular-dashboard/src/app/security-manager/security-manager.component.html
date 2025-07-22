@@ -4,19 +4,18 @@
   <!-- Section pour les tables interdites -->
   <div class="section">
     <h2 class="subtitle">Ajouter des Tables Interdites</h2>
-    <input
-      type="text"
-      [(ngModel)]="newForbiddenTable"
-      placeholder="Nom de la table"
-      class="input-field"
-    />
-    <button (click)="addForbiddenTable()" class="add-btn">Ajouter</button>
+    <select [(ngModel)]="selectedTable" class="input-field" [disabled]="isSaving">
+      <option value="">Sélectionner une table</option>
+      <option *ngFor="let table of availableTables" [value]="table">{{ table }}</option>
+    </select>
+    <button (click)="addForbiddenTable()" class="add-btn" [disabled]="isSaving || !selectedTable">Ajouter</button>
     <ul class="list">
       <li *ngFor="let table of forbiddenTables" class="list-item">
         {{ table }}
-        <button (click)="removeForbiddenTable(table)" class="remove-btn">Supprimer</button>
+        <button (click)="removeForbiddenTable(table)" class="remove-btn" [disabled]="isSaving">Supprimer</button>
       </li>
     </ul>
+    <p *ngIf="errorMessage" style="color: red;">{{ errorMessage }}</p>
   </div>
 
   <!-- Section pour les opérations autorisées -->
@@ -27,16 +26,19 @@
       [(ngModel)]="newAllowedOperation"
       placeholder="Nom de l'opération"
       class="input-field"
+      [disabled]="isSaving"
     />
-    <button (click)="addAllowedOperation()" class="add-btn">Ajouter</button>
+    <button (click)="addAllowedOperation()" class="add-btn" [disabled]="isSaving || !newAllowedOperation">Ajouter</button>
     <ul class="list">
       <li *ngFor="let operation of allowedOperations" class="list-item">
         {{ operation }}
-        <button (click)="removeAllowedOperation(operation)" class="remove-btn">Supprimer</button>
+        <button (click)="removeAllowedOperation(operation)" class="remove-btn" [disabled]="isSaving">Supprimer</button>
       </li>
     </ul>
   </div>
 
   <!-- Bouton de sauvegarde -->
-  <button (click)="saveConfig()" class="save-btn">Sauvegarder</button>
+  <button (click)="saveConfig()" class="save-btn" [disabled]="isSaving">
+    Sauvegarder {{ isSaving ? '(En cours...)' : '' }}
+  </button>
 </div>

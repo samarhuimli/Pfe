@@ -9,8 +9,8 @@ get_db_connection <- function() {
     dbname = Sys.getenv("POSTGRES_DB", "sandbox"),
     user = Sys.getenv("POSTGRES_USER", "postgres"),
     password = Sys.getenv("POSTGRES_PASSWORD", "samar"),
-    host = Sys.getenv("POSTGRES_HOST", "postgres"),
-    port = Sys.getenv("POSTGRES_PORT", "5432")
+    host = Sys.getenv("POSTGRES_HOST", "postgres-sandbox"),  # Corrige la valeur par défaut
+    port = as.integer(Sys.getenv("POSTGRES_PORT", "5432"))  # Assure que le port est un entier
   )
   return(conn)
 }
@@ -40,6 +40,8 @@ function(req) {
   
   # Exécuter le code dans un environnement sécurisé
   conn <- get_db_connection()
+  print(dbGetInfo(conn))  # Débogage : affiche les détails de la connexion
+  
   output <- tryCatch({
     query_match <- regmatches(code, regexec('dbGetQuery\\(conn, "([^"]+)"\\)', code))
     if (length(query_match[[1]]) > 1) {

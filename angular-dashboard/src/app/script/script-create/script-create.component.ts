@@ -7,6 +7,7 @@ import { Script, ScriptService } from '../../services/script.service';
 import { ExecutionService } from '../../services/execution.service';
 import { ExecutionResultComponent } from '../../execution-result/execution-result.component';
 import { ExecutionResultDTO } from 'src/app/models/execution-result.model';
+import { ScriptAnalysisService } from '../../services/script-analysis.service';
 
 @Component({
   selector: 'app-script-create',
@@ -38,11 +39,14 @@ export class ScriptCreateComponent {
 
   output: string = '';
   isRunning: boolean = false;
+  analysisResult: string = '';
+  analysisLoading: boolean = false;
 
   constructor(
     private scriptService: ScriptService,
     private router: Router,
-    private executionService: ExecutionService
+    private executionService: ExecutionService,
+    private scriptAnalysisService: ScriptAnalysisService
   ) {}
 
   async runCode() {
@@ -173,5 +177,37 @@ export class ScriptCreateComponent {
   cancel() {
     this.router.navigate(['/scripts']);
     this.cancelEvent.emit();
+  }
+
+  analyzePythonScript() {
+    if (!this.form.content) return;
+    this.analysisLoading = true;
+    this.analysisResult = '';
+    this.scriptAnalysisService.analyzePython(this.form.content).subscribe({
+      next: (result) => {
+        this.analysisResult = result;
+        this.analysisLoading = false;
+      },
+      error: (err) => {
+        this.analysisResult = 'Erreur lors de l\'analyse Python : ' + (err.error || err.message);
+        this.analysisLoading = false;
+      }
+    });
+  }
+
+  analyzeRScript() {
+    if (!this.form.content) return;
+    this.analysisLoading = true;
+    this.analysisResult = '';
+    this.scriptAnalysisService.analyzeR(this.form.content).subscribe({
+      next: (result) => {
+        this.analysisResult = result;
+        this.analysisLoading = false;
+      },
+      error: (err) => {
+        this.analysisResult = 'Erreur lors de l\'analyse R : ' + (err.error || err.message);
+        this.analysisLoading = false;
+      }
+    });
   }
 }

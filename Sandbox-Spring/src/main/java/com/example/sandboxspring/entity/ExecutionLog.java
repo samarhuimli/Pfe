@@ -24,6 +24,6 @@ public class ExecutionLog {
     private ExecutionType executionType; // Python ou R
 
     public enum ExecutionType {
-        PYTHON, R
+        PYTHON, SYSTEM, R
     }
 }

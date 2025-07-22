@@ -25,9 +25,7 @@ import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
 
 import java.time.LocalDateTime;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @RestController
@@ -67,12 +65,13 @@ public class ExecutionController {
 
         // Validation du script avec SecurityManager
         logger.info("Début de la validation du script : {}", code);
-        String validationError = securityManager.validateScript(code);
-        logger.info("Résultat de la validation : {}", validationError);
-        if (validationError != null) {
-            errorDTO.setError(validationError);
+        try {
+            securityManager.validateExecution(code); // Remplace validateScript par validateExecution
+        } catch (SecurityException e) {
+            logger.info("Résultat de la validation : {}", e.getMessage());
+            errorDTO.setError(e.getMessage());
             errorDTO.setStatus("FAILED");
-            saveExecutionLog("Validation échouée: " + validationError, ExecutionLog.ExecutionType.R);
+            saveExecutionLog("Validation échouée: " + e.getMessage(), ExecutionLog.ExecutionType.R);
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errorDTO);
         }
 
@@ -173,12 +172,13 @@ public class ExecutionController {
 
         // Validation du script avec SecurityManager
         logger.info("Début de la validation du script : {}", code);
-        String validationError = securityManager.validateScript(code);
-        logger.info("Résultat de la validation : {}", validationError);
-        if (validationError != null) {
-            errorDTO.setError(validationError);
+        try {
+            securityManager.validateExecution(code); // Remplace validateScript par validateExecution
+        } catch (SecurityException e) {
+            logger.info("Résultat de la validation : {}", e.getMessage());
+            errorDTO.setError(e.getMessage());
             errorDTO.setStatus("FAILED");
-            saveExecutionLog("Validation échouée: " + validationError, ExecutionLog.ExecutionType.PYTHON);
+            saveExecutionLog("Validation échouée: " + e.getMessage(), ExecutionLog.ExecutionType.PYTHON);
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errorDTO);
         }
 
@@ -318,6 +318,30 @@ public class ExecutionController {
                 .orElseThrow(() -> new ResourceNotFoundException("Log non trouvé avec l'ID: " + id));
         executionLogRepository.delete(log);
         return ResponseEntity.noContent().build();
+    }
+    @PostMapping("/update-security")
+    @CrossOrigin(origins = "http://localhost:4200")
+    public ResponseEntity<String> updateSecurity(@RequestBody Map<String, Object> payload) {
+        logger.info("Reception de la notification de mise à jour de sécurité: {}", payload);
+
+        // Récupérer les données envoyées
+        List<String> forbiddenTables = (List<String>) payload.get("forbiddenTables");
+        List<String> allowedOperations = (List<String>) payload.get("allowedOperations");
+
+        // Mettre à jour le SecurityManager ou effectuer une action (exemple)
+        if (forbiddenTables != null) {
+            securityManager.setForbiddenTables(new HashSet<>(forbiddenTables)); // Conversion List -> Set
+            logger.info("Tables interdites mises à jour: {}", forbiddenTables);
+        }
+        if (allowedOperations != null) {
+            securityManager.setAllowedOperations(new HashSet<>(allowedOperations)); // Conversion List -> Set
+            logger.info("Opérations autorisées mises à jour: {}", allowedOperations);
+        }
+
+        // Sauvegarder un log si nécessaire
+        saveExecutionLog("Mise à jour de sécurité effectuée - Tables interdites: " + forbiddenTables + ", Opérations: " + allowedOperations, ExecutionLog.ExecutionType.SYSTEM);
+
+        return ResponseEntity.ok("Notification de sécurité traitée avec succès");
     }
 
     private void saveExecutionLog(String message, ExecutionLog.ExecutionType type) {

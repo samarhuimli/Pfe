@@ -42,6 +42,22 @@
           </div>
         </div>
 
+        <!-- Boutons d'analyse de vulnérabilité -->
+        <div class="col-12 mb-2">
+          <button *ngIf="form.type === 'PYTHON'" class="btn btn-warning me-2" type="button" (click)="analyzePythonScript()" [disabled]="!form.content || analysisLoading">
+            <i class="bi bi-shield-lock"></i> Analyser Python
+          </button>
+          <button *ngIf="form.type === 'R'" class="btn btn-warning me-2" type="button" (click)="analyzeRScript()" [disabled]="!form.content || analysisLoading">
+            <i class="bi bi-shield-lock"></i> Analyser R
+          </button>
+          <span *ngIf="analysisLoading" class="ms-2"><i class="bi bi-arrow-repeat spin"></i> Analyse en cours...</span>
+        </div>
+        <div class="col-12" *ngIf="analysisResult">
+          <div class="alert alert-info pre-scrollable" style="white-space: pre-wrap;">
+            {{ analysisResult }}
+          </div>
+        </div>
+
         <!-- Actions sur le code -->
         <div class="col-12">
           <div class="button-group">
