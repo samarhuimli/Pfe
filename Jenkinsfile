@@ -45,8 +45,7 @@ pipeline {
             steps {
                 dir('angular-dashboard') {
                     bat 'npm install'
-                    bat 'npm run build -- --prod'
-                }
+                    bat 'npm run build -- --configuration=production'                }
             }
         }
         
