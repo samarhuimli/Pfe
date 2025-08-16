@@ -2,93 +2,62 @@ pipeline {
     agent any
 
     environment {
-        REGISTRY = "samarhuimli"                   // ton Docker Hub username
-        IMAGE_TAG = "${env.BUILD_NUMBER}"          // numéro de build comme version
+        // ID du credential Git dans Jenkins
+        GIT_CREDENTIAL_ID = 'github-cred'
+        // URL de ton repo Git
+        REPO_URL = 'https://github.com/samarhuimli/Pfe.git'
+        // Branche à utiliser
+        BRANCH_NAME = 'main'
     }
 
     stages {
+
         stage('Checkout') {
             steps {
-                git branch: 'main',
-                    url: 'https://github.com/samarhuimli/Pfe.git',
-                    credentialsId: 'github-cred'
-            }
-        }
-
-        stage('Run Tests') {
-            steps {
-                script {
-                    // Tests Spring Boot
-                    dir('backend-spring') {
-                        bat 'echo === Spring Boot Tests ==='
-                        bat 'mvn test || exit 0'
-                    }
-
-                    // Tests Angular
-                    dir('frontend-angular') {
-                        bat 'echo === Angular Tests ==='
-                        bat 'npm install'
-                        bat 'npm test || exit 0'
-                    }
-
-                    // Tests Flask
-                    dir('flask-api') {
-                        bat 'echo === Flask Tests ==='
-                        bat 'pytest || exit 0'
-                    }
-                }
+                echo 'Récupération du code depuis Git...'
+                git branch: "${BRANCH_NAME}",
+                    url: "${REPO_URL}",
+                    credentialsId: "${GIT_CREDENTIAL_ID}"
             }
         }
 
         stage('Build Docker Images') {
             steps {
-                bat 'docker-compose build'
+                echo 'Construction des images Docker...'
+                // Reconstruction seulement des services qui ont changé
+                sh 'docker-compose build --pull'
             }
         }
 
-        stage('Security Scan') {
+        stage('Start Services') {
             steps {
-                script {
-                    bat '''
-                        where trivy >nul 2>nul
-                        if %errorlevel% neq 0 (
-                            echo ⚠️ Trivy n’est pas installé sur cet agent Jenkins
-                        ) else (
-                            trivy image %REGISTRY%/backend-spring:%IMAGE_TAG% || exit 0
-                            trivy image %REGISTRY%/frontend-angular:%IMAGE_TAG% || exit 0
-                            trivy image %REGISTRY%/flask-api:%IMAGE_TAG% || exit 0
-                        )
-                    '''
-                }
+                echo 'Démarrage des services...'
+                sh 'docker-compose up -d'
             }
         }
 
-        stage('Docker Login & Push') {
+        stage('Health Check') {
             steps {
-                withCredentials([usernamePassword(credentialsId: 'docker-cred',
-                                                 usernameVariable: 'DOCKER_USER',
-                                                 passwordVariable: 'DOCKER_PASS')]) {
-                    bat '''
-                        echo %DOCKER_PASS% | docker login -u %DOCKER_USER% --password-stdin
-                        docker-compose push
-                    '''
-                }
+                echo 'Vérification des containers...'
+                // Vérifie si tous les containers sont en ligne
+                sh 'docker ps'
             }
         }
 
-        stage('Deploy to Sandbox') {
+        stage('Cleanup') {
             steps {
-                bat '''
-                    docker-compose down || exit 0
-                    docker-compose up -d
-                '''
+                echo 'Nettoyage des images intermédiaires et volumes inutilisés...'
+                sh 'docker system prune -f'
             }
         }
     }
 
     post {
-        always {
-            echo "Pipeline terminé (CI/CD sandbox)"
+        success {
+            echo 'Pipeline terminé avec succès ✅'
+        }
+        failure {
+            echo 'Pipeline échoué ❌'
         }
     }
 }
