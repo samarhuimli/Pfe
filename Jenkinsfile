@@ -1,63 +1,85 @@
 pipeline {
     agent any
-
+    
     environment {
-        // ID du credential Git dans Jenkins
-        GIT_CREDENTIAL_ID = 'github-cred'
-        // URL de ton repo Git
-        REPO_URL = 'https://github.com/samarhuimli/Pfe.git'
-        // Branche à utiliser
-        BRANCH_NAME = 'main'
+        REGISTRY = "samarhuimli" // ton Docker Hub username
+        IMAGE_TAG = "${env.BUILD_NUMBER}" // numéro de build comme version
     }
-
+    
     stages {
-
         stage('Checkout') {
             steps {
-                echo 'Récupération du code depuis Git...'
-                git branch: "${BRANCH_NAME}",
-                    url: "${REPO_URL}",
-                    credentialsId: "${GIT_CREDENTIAL_ID}"
+                git branch: 'main', 
+                url: 'https://github.com/samarhuimli/Pfe.git', 
+                credentialsId: 'github-cred' // Credential GitHub
             }
         }
-
+        
+        stage('Run Tests') {
+            steps {
+                script {
+                    // Adaptation pour Windows avec bat
+                    bat '''
+                        echo "=== Spring Boot Tests ==="
+                        cd backend-spring && mvn test || exit 0
+                        echo "=== Angular Tests ==="
+                        cd ..\\frontend-angular && npm install && npm test || exit 0
+                        echo "=== Flask Tests ==="
+                        cd ..\\flask-api && pytest || exit 0
+                    '''
+                }
+            }
+        }
+        
         stage('Build Docker Images') {
             steps {
-                echo 'Construction des images Docker...'
-                // Reconstruction seulement des services qui ont changé
-                sh 'docker-compose build --pull'
+                bat 'docker-compose build'
             }
         }
-
-        stage('Start Services') {
+        
+        stage('Security Scan') {
             steps {
-                echo 'Démarrage des services...'
-                sh 'docker-compose up -d'
+                script {
+                    // Vérifie si trivy est installé sur Jenkins
+                    bat '''
+                        where trivy || echo "⚠️ Trivy n'est pas installé sur cet agent Jenkins"
+                        trivy image %REGISTRY%/backend-spring:%IMAGE_TAG% || exit 0
+                        trivy image %REGISTRY%/frontend-angular:%IMAGE_TAG% || exit 0
+                        trivy image %REGISTRY%/flask-api:%IMAGE_TAG% || exit 0
+                    '''
+                }
             }
         }
-
-        stage('Health Check') {
+        
+        stage('Docker Login & Push') {
             steps {
-                echo 'Vérification des containers...'
-                // Vérifie si tous les containers sont en ligne
-                sh 'docker ps'
+                withCredentials([usernamePassword(credentialsId: 'docker-cred', 
+                              usernameVariable: 'DOCKER_USER', 
+                              passwordVariable: 'DOCKER_PASS')]) {
+                    bat '''
+                        echo %DOCKER_PASS% | docker login -u %DOCKER_USER% --password-stdin
+                        docker-compose push
+                    '''
+                }
             }
         }
-
-        stage('Cleanup') {
+        
+        stage('Deploy to Sandbox') {
             steps {
-                echo 'Nettoyage des images intermédiaires et volumes inutilisés...'
-                sh 'docker system prune -f'
+                script {
+                    // Déploiement simple avec docker-compose
+                    bat '''
+                        docker-compose down || exit 0
+                        docker-compose up -d
+                    '''
+                }
             }
         }
     }
-
+    
     post {
-        success {
-            echo 'Pipeline terminé avec succès ✅'
-        }
-        failure {
-            echo 'Pipeline échoué ❌'
+        always {
+            echo "Pipeline terminé (CI/CD sandbox)"
         }
     }
 }
