@@ -30,7 +30,7 @@ pipeline {
             steps {
                 dir('Sandbox-Spring') {
                     bat 'mvn clean package -DskipTests'
-                    // Vérification que le JAR est bien généré
+                    // Verify JAR was created
                     bat '''
                         if not exist "target\\*.jar" (
                             echo ERREUR: Fichier JAR introuvable
@@ -45,17 +45,21 @@ pipeline {
             steps {
                 dir('angular-dashboard') {
                     bat 'npm install'
-                    bat 'npm run build -- --configuration=production'                }
+                    // Fixed build command for modern Angular CLI
+                    bat 'npm run build -- --configuration production'
+                    // Alternative if the above doesn't work:
+                    // bat 'npm run build'
+                }
             }
         }
         
         stage('Build Docker Images') {
             steps {
                 script {
-                    // Construction des images
+                    // Build images
                     bat 'docker-compose build'
                     
-                    // Tagging des images
+                    // Tag images
                     bat '''
                         docker tag sandbox-ci-cd_spring-app %REGISTRY%/spring-app:%IMAGE_TAG%
                         docker tag sandbox-ci-cd_python-api %REGISTRY%/python-api:%IMAGE_TAG%
@@ -114,12 +118,24 @@ pipeline {
             echo "Pipeline terminé - Vérification des conteneurs"
             bat 'docker ps -a'
             
-            // Nettoyage des ressources
+            // Resource cleanup with error handling
             script {
-                bat '''
-                    for /f "tokens=*" %%i in ('docker ps -aq') do docker rm -f %%i
-                    for /f "tokens=*" %%i in ('docker images -q -f "dangling=true"') do docker rmi %%i
-                '''
+                try {
+                    // Clean containers only if any exist
+                    def containers = bat(script: '@docker ps -aq', returnStdout: true).trim()
+                    if (containers) {
+                        bat '@docker rm -f $(docker ps -aq)'
+                    }
+                    
+                    // Clean dangling images only if any exist
+                    def images = bat(script: '@docker images -q -f "dangling=true"', returnStdout: true).trim()
+                    if (images) {
+                        bat '@docker rmi $(docker images -q -f "dangling=true")'
+                    }
+                } catch (e) {
+                    echo "Cleanup failed: ${e.message}"
+                    // Continue anyway
+                }
             }
         }
     }
