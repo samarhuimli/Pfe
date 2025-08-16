@@ -20,21 +20,21 @@ pipeline {
                 script {
                     // Tests Spring Boot
                     dir('backend-spring') {
-                        sh 'echo "=== Spring Boot Tests ==="'
-                        sh 'mvn test || true'
+                        bat 'echo === Spring Boot Tests ==='
+                        bat 'mvn test || exit 0'
                     }
 
                     // Tests Angular
                     dir('frontend-angular') {
-                        sh 'echo "=== Angular Tests ==="'
-                        sh 'npm install'
-                        sh 'npm test || true'
+                        bat 'echo === Angular Tests ==='
+                        bat 'npm install'
+                        bat 'npm test || exit 0'
                     }
 
                     // Tests Flask
                     dir('flask-api') {
-                        sh 'echo "=== Flask Tests ==="'
-                        sh 'pytest || true'
+                        bat 'echo === Flask Tests ==='
+                        bat 'pytest || exit 0'
                     }
                 }
             }
@@ -42,22 +42,22 @@ pipeline {
 
         stage('Build Docker Images') {
             steps {
-                sh 'docker-compose build'
+                bat 'docker-compose build'
             }
         }
 
         stage('Security Scan') {
             steps {
                 script {
-                    sh '''
-                        if ! command -v trivy &> /dev/null
-                        then
-                            echo "⚠️ Trivy n’est pas installé sur cet agent Jenkins"
-                        else
-                            trivy image $REGISTRY/backend-spring:$IMAGE_TAG || true
-                            trivy image $REGISTRY/frontend-angular:$IMAGE_TAG || true
-                            trivy image $REGISTRY/flask-api:$IMAGE_TAG || true
-                        fi
+                    bat '''
+                        where trivy >nul 2>nul
+                        if %errorlevel% neq 0 (
+                            echo ⚠️ Trivy n’est pas installé sur cet agent Jenkins
+                        ) else (
+                            trivy image %REGISTRY%/backend-spring:%IMAGE_TAG% || exit 0
+                            trivy image %REGISTRY%/frontend-angular:%IMAGE_TAG% || exit 0
+                            trivy image %REGISTRY%/flask-api:%IMAGE_TAG% || exit 0
+                        )
                     '''
                 }
             }
@@ -68,8 +68,8 @@ pipeline {
                 withCredentials([usernamePassword(credentialsId: 'docker-cred',
                                                  usernameVariable: 'DOCKER_USER',
                                                  passwordVariable: 'DOCKER_PASS')]) {
-                    sh '''
-                        echo $DOCKER_PASS | docker login -u $DOCKER_USER --password-stdin
+                    bat '''
+                        echo %DOCKER_PASS% | docker login -u %DOCKER_USER% --password-stdin
                         docker-compose push
                     '''
                 }
@@ -78,8 +78,8 @@ pipeline {
 
         stage('Deploy to Sandbox') {
             steps {
-                sh '''
-                    docker-compose down || true
+                bat '''
+                    docker-compose down || exit 0
                     docker-compose up -d
                 '''
             }
