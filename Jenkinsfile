@@ -11,24 +11,31 @@ pipeline {
             steps {
                 git branch: 'main',
                     url: 'https://github.com/samarhuimli/Pfe.git',
-                    credentialsId: 'github-cred'   // Credential GitHub
+                    credentialsId: 'github-cred'
             }
         }
 
         stage('Run Tests') {
             steps {
                 script {
-                    // Adaptation : si tes projets sont dans des dossiers séparés
-                    sh '''
-                        echo "=== Spring Boot Tests ==="
-                        cd backend-spring && mvn test || true
+                    // Tests Spring Boot
+                    dir('backend-spring') {
+                        sh 'echo "=== Spring Boot Tests ==="'
+                        sh 'mvn test || true'
+                    }
 
-                        echo "=== Angular Tests ==="
-                        cd ../frontend-angular && npm install && npm test || true
+                    // Tests Angular
+                    dir('frontend-angular') {
+                        sh 'echo "=== Angular Tests ==="'
+                        sh 'npm install'
+                        sh 'npm test || true'
+                    }
 
-                        echo "=== Flask Tests ==="
-                        cd ../flask-api && pytest || true
-                    '''
+                    // Tests Flask
+                    dir('flask-api') {
+                        sh 'echo "=== Flask Tests ==="'
+                        sh 'pytest || true'
+                    }
                 }
             }
         }
@@ -42,12 +49,15 @@ pipeline {
         stage('Security Scan') {
             steps {
                 script {
-                    // Vérifie si trivy est installé sur Jenkins
                     sh '''
-                        which trivy || echo "⚠️ Trivy n’est pas installé sur cet agent Jenkins"
-                        trivy image $REGISTRY/backend-spring:$IMAGE_TAG || true
-                        trivy image $REGISTRY/frontend-angular:$IMAGE_TAG || true
-                        trivy image $REGISTRY/flask-api:$IMAGE_TAG || true
+                        if ! command -v trivy &> /dev/null
+                        then
+                            echo "⚠️ Trivy n’est pas installé sur cet agent Jenkins"
+                        else
+                            trivy image $REGISTRY/backend-spring:$IMAGE_TAG || true
+                            trivy image $REGISTRY/frontend-angular:$IMAGE_TAG || true
+                            trivy image $REGISTRY/flask-api:$IMAGE_TAG || true
+                        fi
                     '''
                 }
             }
@@ -60,8 +70,6 @@ pipeline {
                                                  passwordVariable: 'DOCKER_PASS')]) {
                     sh '''
                         echo $DOCKER_PASS | docker login -u $DOCKER_USER --password-stdin
-
-                        # Push des images avec un tag lié au build
                         docker-compose push
                     '''
                 }
@@ -70,13 +78,10 @@ pipeline {
 
         stage('Deploy to Sandbox') {
             steps {
-                script {
-                    // Déploiement simple avec docker-compose
-                    sh '''
-                        docker-compose down || true
-                        docker-compose up -d
-                    '''
-                }
+                sh '''
+                    docker-compose down || true
+                    docker-compose up -d
+                '''
             }
         }
     }
