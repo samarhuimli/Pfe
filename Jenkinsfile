@@ -2,7 +2,7 @@ pipeline {
     agent any
 
     environment {
-        REGISTRY = "samarhumili"                   // ton Docker Hub username
+        REGISTRY = "samarhuimli"                   // ton Docker Hub username
         IMAGE_TAG = "${env.BUILD_NUMBER}"          // numéro de build comme version
     }
 
