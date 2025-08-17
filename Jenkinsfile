@@ -2,11 +2,16 @@ pipeline {
     agent any
     
     environment {
+        // Docker Hub
         REGISTRY = "samarhuimli"
         IMAGE_TAG = "${env.BUILD_NUMBER}"
+        
+        // PostgreSQL
         POSTGRES_DB = "sandbox"
         POSTGRES_USER = "postgres"
         POSTGRES_PASSWORD = "samar"
+        
+        // Spring
         SPRING_DATASOURCE_URL = "jdbc:postgresql://postgres:5432/sandbox"
         SPRING_DATASOURCE_USERNAME = "postgres"
         SPRING_DATASOURCE_PASSWORD = "samar"
@@ -50,31 +55,31 @@ pipeline {
                     bat 'docker-compose build --no-cache'
                     bat 'docker images'
                     
-                    // Vérification et tagging avec débogage
+                    // Tagging avec débogage et vérification
                     bat '''
                         echo Tagging images with REGISTRY=%REGISTRY% and IMAGE_TAG=%IMAGE_TAG%
-                        if docker images -q sandbox-ci-cd-spring-app:latest >nul 2>&1 (
+                        if exist "$(docker images -q sandbox-ci-cd-spring-app:latest)" (
                             docker tag sandbox-ci-cd-spring-app "%REGISTRY%/spring-app:%IMAGE_TAG%"
                             docker tag sandbox-ci-cd-spring-app "%REGISTRY%/spring-app:latest"
                         ) else (
                             echo ERREUR: Image sandbox-ci-cd-spring-app non trouvée
                             exit 1
                         )
-                        if docker images -q sandbox-ci-cd-python-api:latest >nul 2>&1 (
+                        if exist "$(docker images -q sandbox-ci-cd-python-api:latest)" (
                             docker tag sandbox-ci-cd-python-api "%REGISTRY%/python-api:%IMAGE_TAG%"
                             docker tag sandbox-ci-cd-python-api "%REGISTRY%/python-api:latest"
                         ) else (
                             echo ERREUR: Image sandbox-ci-cd-python-api non trouvée
                             exit 1
                         )
-                        if docker images -q sandbox-ci-cd-r-api:latest >nul 2>&1 (
+                        if exist "$(docker images -q sandbox-ci-cd-r-api:latest)" (
                             docker tag sandbox-ci-cd-r-api "%REGISTRY%/r-api:%IMAGE_TAG%"
                             docker tag sandbox-ci-cd-r-api "%REGISTRY%/r-api:latest"
                         ) else (
                             echo ERREUR: Image sandbox-ci-cd-r-api non trouvée
                             exit 1
                         )
-                        if docker images -q sandbox-ci-cd-frontend:latest >nul 2>&1 (
+                        if exist "$(docker images -q sandbox-ci-cd-frontend:latest)" (
                             docker tag sandbox-ci-cd-frontend "%REGISTRY%/frontend:%IMAGE_TAG%"
                             docker tag sandbox-ci-cd-frontend "%REGISTRY%/frontend:latest"
                         ) else (
