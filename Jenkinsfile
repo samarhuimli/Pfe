@@ -30,7 +30,6 @@ pipeline {
             steps {
                 dir('Sandbox-Spring') {
                     bat 'mvn clean package -DskipTests'
-                    // Verify JAR was created
                     bat '''
                         if not exist "target\\*.jar" (
                             echo ERREUR: Fichier JAR introuvable
@@ -45,10 +44,7 @@ pipeline {
             steps {
                 dir('angular-dashboard') {
                     bat 'npm install'
-                    // Fixed build command for modern Angular CLI
                     bat 'npm run build -- --configuration production'
-                    // Alternative if the above doesn't work:
-                    // bat 'npm run build'
                 }
             }
         }
@@ -56,16 +52,27 @@ pipeline {
         stage('Build Docker Images') {
             steps {
                 script {
-                    // Build images
-                    bat 'docker-compose build'
+                    // Build avec docker-compose
+                    bat 'docker-compose build --no-cache'
                     
-                    // Tag images
-                    bat '''
-                        docker tag sandbox-ci-cd_spring-app %REGISTRY%/spring-app:%IMAGE_TAG%
-                        docker tag sandbox-ci-cd_python-api %REGISTRY%/python-api:%IMAGE_TAG%
-                        docker tag sandbox-ci-cd_r-api %REGISTRY%/r-api:%IMAGE_TAG%
-                        docker tag sandbox-ci-cd_frontend %REGISTRY%/frontend:%IMAGE_TAG%
-                    '''
+                    // Vérification des images construites
+                    bat 'docker images'
+                    
+                    // Tagging avec les noms corrects (avec traits d'union)
+                    bat """
+                        docker tag sandbox-ci-cd-spring-app %REGISTRY%/spring-app:%IMAGE_TAG%
+                        docker tag sandbox-ci-cd-python-api %REGISTRY%/python-api:%IMAGE_TAG%
+                        docker tag sandbox-ci-cd-r-api %REGISTRY%/r-api:%IMAGE_TAG%
+                        docker tag sandbox-ci-cd-frontend %REGISTRY%/frontend:%IMAGE_TAG%
+                    """
+                    
+                    // Tag supplémentaire 'latest'
+                    bat """
+                        docker tag %REGISTRY%/spring-app:%IMAGE_TAG% %REGISTRY%/spring-app:latest
+                        docker tag %REGISTRY%/python-api:%IMAGE_TAG% %REGISTRY%/python-api:latest
+                        docker tag %REGISTRY%/r-api:%IMAGE_TAG% %REGISTRY%/r-api:latest
+                        docker tag %REGISTRY%/frontend:%IMAGE_TAG% %REGISTRY%/frontend:latest
+                    """
                 }
             }
         }
@@ -98,6 +105,10 @@ pipeline {
                         docker push %REGISTRY%/python-api:%IMAGE_TAG%
                         docker push %REGISTRY%/r-api:%IMAGE_TAG%
                         docker push %REGISTRY%/frontend:%IMAGE_TAG%
+                        docker push %REGISTRY%/spring-app:latest
+                        docker push %REGISTRY%/python-api:latest
+                        docker push %REGISTRY%/r-api:latest
+                        docker push %REGISTRY%/frontend:latest
                     '''
                 }
             }
@@ -118,25 +129,29 @@ pipeline {
             echo "Pipeline terminé - Vérification des conteneurs"
             bat 'docker ps -a'
             
-            // Resource cleanup with error handling
             script {
                 try {
-                    // Clean containers only if any exist
+                    // Nettoyage des conteneurs
                     def containers = bat(script: '@docker ps -aq', returnStdout: true).trim()
                     if (containers) {
                         bat '@docker rm -f $(docker ps -aq)'
                     }
                     
-                    // Clean dangling images only if any exist
+                    // Nettoyage des images intermédiaires
                     def images = bat(script: '@docker images -q -f "dangling=true"', returnStdout: true).trim()
                     if (images) {
                         bat '@docker rmi $(docker images -q -f "dangling=true")'
                     }
                 } catch (e) {
                     echo "Cleanup failed: ${e.message}"
-                    // Continue anyway
                 }
             }
+        }
+        
+        failure {
+            emailext body: 'Le build ${BUILD_STATUS}\nVoir les détails: ${BUILD_URL}',
+                    subject: 'Échec du build Jenkins',
+                    to: 'votre-email@example.com'
         }
     }
 }
