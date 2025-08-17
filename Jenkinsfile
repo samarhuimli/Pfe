@@ -2,16 +2,11 @@ pipeline {
     agent any
     
     environment {
-        // Docker Hub
         REGISTRY = "samarhuimli"
         IMAGE_TAG = "${env.BUILD_NUMBER}"
-        
-        // PostgreSQL
         POSTGRES_DB = "sandbox"
         POSTGRES_USER = "postgres"
         POSTGRES_PASSWORD = "samar"
-        
-        // Spring
         SPRING_DATASOURCE_URL = "jdbc:postgresql://postgres:5432/sandbox"
         SPRING_DATASOURCE_USERNAME = "postgres"
         SPRING_DATASOURCE_PASSWORD = "samar"
@@ -52,42 +47,41 @@ pipeline {
         stage('Build Docker Images') {
             steps {
                 script {
-                    // Build avec docker-compose sans cache
                     bat 'docker-compose build --no-cache'
-                    
-                    // Vérification des images construites
                     bat 'docker images'
                     
-                    // Tagging avec les noms corrects (avec tirets)
+                    // Vérification et tagging avec débogage
                     bat '''
+                        echo Tagging images with REGISTRY=%REGISTRY% and IMAGE_TAG=%IMAGE_TAG%
                         if docker images -q sandbox-ci-cd-spring-app:latest >nul 2>&1 (
-                            docker tag sandbox-ci-cd-spring-app %REGISTRY%/spring-app:%IMAGE_TAG%
-                            docker tag sandbox-ci-cd-spring-app %REGISTRY%/spring-app:latest
+                            docker tag sandbox-ci-cd-spring-app "%REGISTRY%/spring-app:%IMAGE_TAG%"
+                            docker tag sandbox-ci-cd-spring-app "%REGISTRY%/spring-app:latest"
                         ) else (
                             echo ERREUR: Image sandbox-ci-cd-spring-app non trouvée
                             exit 1
                         )
                         if docker images -q sandbox-ci-cd-python-api:latest >nul 2>&1 (
-                            docker tag sandbox-ci-cd-python-api %REGISTRY%/python-api:%IMAGE_TAG%
-                            docker tag sandbox-ci-cd-python-api %REGISTRY%/python-api:latest
+                            docker tag sandbox-ci-cd-python-api "%REGISTRY%/python-api:%IMAGE_TAG%"
+                            docker tag sandbox-ci-cd-python-api "%REGISTRY%/python-api:latest"
                         ) else (
                             echo ERREUR: Image sandbox-ci-cd-python-api non trouvée
                             exit 1
                         )
                         if docker images -q sandbox-ci-cd-r-api:latest >nul 2>&1 (
-                            docker tag sandbox-ci-cd-r-api %REGISTRY%/r-api:%IMAGE_TAG%
-                            docker tag sandbox-ci-cd-r-api %REGISTRY%/r-api:latest
+                            docker tag sandbox-ci-cd-r-api "%REGISTRY%/r-api:%IMAGE_TAG%"
+                            docker tag sandbox-ci-cd-r-api "%REGISTRY%/r-api:latest"
                         ) else (
                             echo ERREUR: Image sandbox-ci-cd-r-api non trouvée
                             exit 1
                         )
                         if docker images -q sandbox-ci-cd-frontend:latest >nul 2>&1 (
-                            docker tag sandbox-ci-cd-frontend %REGISTRY%/frontend:%IMAGE_TAG%
-                            docker tag sandbox-ci-cd-frontend %REGISTRY%/frontend:latest
+                            docker tag sandbox-ci-cd-frontend "%REGISTRY%/frontend:%IMAGE_TAG%"
+                            docker tag sandbox-ci-cd-frontend "%REGISTRY%/frontend:latest"
                         ) else (
                             echo ERREUR: Image sandbox-ci-cd-frontend non trouvée
                             exit 1
                         )
+                        docker images
                     '''
                 }
             }
@@ -102,7 +96,6 @@ pipeline {
                             trivy image %REGISTRY%/spring-app:%IMAGE_TAG% || exit 0
                             trivy image %REGISTRY%/python-api:%IMAGE_TAG% || exit 0
                             trivy image %REGISTRY%/r-api:%IMAGE_TAG% || exit 0
-                            trivy image %REGISTRY%/frontend:%IMAGE_TAG% || exit 0
                         )
                     '''
                 }
@@ -148,13 +141,10 @@ pipeline {
             
             script {
                 try {
-                    // Nettoyage des conteneurs arrêtés
                     def containers = bat(script: '@docker ps -aq -f "status=exited"', returnStdout: true).trim()
                     if (containers) {
                         bat '@docker rm -f $(docker ps -aq -f "status=exited")'
                     }
-                    
-                    // Nettoyage des images intermédiaires
                     def images = bat(script: '@docker images -q -f "dangling=true"', returnStdout: true).trim()
                     if (images) {
                         bat '@docker rmi $(docker images -q -f "dangling=true")'
@@ -168,7 +158,7 @@ pipeline {
         failure {
             emailext body: 'Le build ${BUILD_STATUS}\nVoir les détails: ${BUILD_URL}',
                     subject: 'Échec du build Jenkins',
-                    to: 'votre-email@example.com'
+                    to: 'huimlisamar@gmail.com'
         }
     }
 }
