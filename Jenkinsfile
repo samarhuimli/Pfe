@@ -9,7 +9,7 @@ pipeline {
         stage('Checkout') {
             steps {
                 git branch: 'main',
-                    url: 'https://github.com/samarhumili/Pfe.git',
+                    url: 'https://github.com/samarhuimli/Pfe.git',
                     credentialsId: 'github-cred'
             }
         }
