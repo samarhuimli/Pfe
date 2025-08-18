@@ -50,10 +50,10 @@ pipeline {
                     bat 'docker-compose build --no-cache'
                     bat 'docker images'
                     
-                    // Débogage et tagging
+                    // Tagging avec débogage et vérification
                     bat '''
                         echo Tagging images with REGISTRY=%REGISTRY% and IMAGE_TAG=%IMAGE_TAG%
-                        docker inspect --type=image sandbox-ci-cd-spring-app:latest >nul 2>&1
+                        docker inspect sandbox-ci-cd-spring-app >nul 2>&1
                         if %ERRORLEVEL% == 0 (
                             docker tag sandbox-ci-cd-spring-app "%REGISTRY%/spring-app:%IMAGE_TAG%"
                             docker tag sandbox-ci-cd-spring-app "%REGISTRY%/spring-app:latest"
@@ -61,7 +61,7 @@ pipeline {
                             echo ERREUR: Image sandbox-ci-cd-spring-app non trouvée
                             exit 1
                         )
-                        docker inspect --type=image sandbox-ci-cd-python-api:latest >nul 2>&1
+                        docker inspect sandbox-ci-cd-python-api >nul 2>&1
                         if %ERRORLEVEL% == 0 (
                             docker tag sandbox-ci-cd-python-api "%REGISTRY%/python-api:%IMAGE_TAG%"
                             docker tag sandbox-ci-cd-python-api "%REGISTRY%/python-api:latest"
@@ -69,7 +69,7 @@ pipeline {
                             echo ERREUR: Image sandbox-ci-cd-python-api non trouvée
                             exit 1
                         )
-                        docker inspect --type=image sandbox-ci-cd-r-api:latest >nul 2>&1
+                        docker inspect sandbox-ci-cd-r-api >nul 2>&1
                         if %ERRORLEVEL% == 0 (
                             docker tag sandbox-ci-cd-r-api "%REGISTRY%/r-api:%IMAGE_TAG%"
                             docker tag sandbox-ci-cd-r-api "%REGISTRY%/r-api:latest"
@@ -77,7 +77,7 @@ pipeline {
                             echo ERREUR: Image sandbox-ci-cd-r-api non trouvée
                             exit 1
                         )
-                        docker inspect --type=image sandbox-ci-cd-frontend:latest >nul 2>&1
+                        docker inspect sandbox-ci-cd-frontend >nul 2>&1
                         if %ERRORLEVEL% == 0 (
                             docker tag sandbox-ci-cd-frontend "%REGISTRY%/frontend:%IMAGE_TAG%"
                             docker tag sandbox-ci-cd-frontend "%REGISTRY%/frontend:latest"
@@ -146,15 +146,19 @@ pipeline {
             script {
                 try {
                     // Nettoyage des conteneurs arrêtés
-                    def containers = bat(script: 'docker ps -aq -f "status=exited"', returnStdout: true).trim()
-                    if (containers) {
-                        bat "docker rm -f ${containers}"
+                    def exitedContainers = bat(script: 'docker ps -aq -f status=exited', returnStdout: true).trim()
+                    if (exitedContainers) {
+                        exitedContainers.split('\\r?\\n').each { container ->
+                            bat "docker rm -f ${container}"
+                        }
                     }
                     
                     // Nettoyage des images dangling
-                    def images = bat(script: 'docker images -q -f "dangling=true"', returnStdout: true).trim()
-                    if (images) {
-                        bat "docker rmi ${images}"
+                    def danglingImages = bat(script: 'docker images -q -f dangling=true', returnStdout: true).trim()
+                    if (danglingImages) {
+                        danglingImages.split('\\r?\\n').each { image ->
+                            bat "docker rmi ${image}"
+                        }
                     }
                 } catch (e) {
                     echo "Cleanup failed: ${e.message}"
