@@ -15,6 +15,15 @@ pipeline {
         SPRING_DATASOURCE_URL = "jdbc:postgresql://postgres:5432/sandbox"
         SPRING_DATASOURCE_USERNAME = "postgres"
         SPRING_DATASOURCE_PASSWORD = "samar"
+        
+        // Optimisation Docker
+        DOCKER_BUILDKIT = "1"
+        COMPOSE_DOCKER_CLI_BUILD = "1"
+    }
+    
+    options {
+        timeout(time: 1, unit: 'HOURS')
+        disableConcurrentBuilds()
     }
     
     stages {
@@ -52,56 +61,61 @@ pipeline {
         stage('Build Docker Images') {
             steps {
                 script {
-                    bat 'docker-compose build --no-cache'
-                    bat 'docker images'
+                    // Construction avec timeout
+                    timeout(time: 30, unit: 'MINUTES') {
+                        bat 'docker-compose build --no-cache'
+                    }
                     
-                    // Tagging avec débogage et vérification
+                    // Vérification des images
                     bat '''
-                        echo Tagging images with REGISTRY=%REGISTRY% and IMAGE_TAG=%IMAGE_TAG%
-                        if exist "$(docker images -q sandbox-ci-cd-spring-app:latest)" (
-                            docker tag sandbox-ci-cd-spring-app "%REGISTRY%/spring-app:%IMAGE_TAG%"
-                            docker tag sandbox-ci-cd-spring-app "%REGISTRY%/spring-app:latest"
-                        ) else (
-                            echo ERREUR: Image sandbox-ci-cd-spring-app non trouvée
-                            exit 1
-                        )
-                        if exist "$(docker images -q sandbox-ci-cd-python-api:latest)" (
-                            docker tag sandbox-ci-cd-python-api "%REGISTRY%/python-api:%IMAGE_TAG%"
-                            docker tag sandbox-ci-cd-python-api "%REGISTRY%/python-api:latest"
-                        ) else (
-                            echo ERREUR: Image sandbox-ci-cd-python-api non trouvée
-                            exit 1
-                        )
-                        if exist "$(docker images -q sandbox-ci-cd-r-api:latest)" (
-                            docker tag sandbox-ci-cd-r-api "%REGISTRY%/r-api:%IMAGE_TAG%"
-                            docker tag sandbox-ci-cd-r-api "%REGISTRY%/r-api:latest"
-                        ) else (
-                            echo ERREUR: Image sandbox-ci-cd-r-api non trouvée
-                            exit 1
-                        )
-                        if exist "$(docker images -q sandbox-ci-cd-frontend:latest)" (
-                            docker tag sandbox-ci-cd-frontend "%REGISTRY%/frontend:%IMAGE_TAG%"
-                            docker tag sandbox-ci-cd-frontend "%REGISTRY%/frontend:latest"
-                        ) else (
-                            echo ERREUR: Image sandbox-ci-cd-frontend non trouvée
-                            exit 1
-                        )
+                        echo Liste des images disponibles:
                         docker images
+                        
+                        echo Vérification des images construites...
+                        docker inspect sandbox-ci-cd_spring-app >nul 2>&1 || (
+                            echo ERREUR: Image spring-app non trouvée
+                            exit 1
+                        )
+                        docker inspect sandbox-ci-cd_python-api >nul 2>&1 || (
+                            echo ERREUR: Image python-api non trouvée
+                            exit 1
+                        )
+                        docker inspect sandbox-ci-cd_r-api >nul 2>&1 || (
+                            echo ERREUR: Image r-api non trouvée
+                            exit 1
+                        )
+                        docker inspect sandbox-ci-cd_frontend >nul 2>&1 || (
+                            echo ERREUR: Image frontend non trouvée
+                            exit 1
+                        )
+                    '''
+                    
+                    // Tagging avec les bons noms de service
+                    bat '''
+                        echo Tagging des images...
+                        docker tag sandbox-ci-cd_spring-app %REGISTRY%/spring-app:%IMAGE_TAG%
+                        docker tag sandbox-ci-cd_spring-app %REGISTRY%/spring-app:latest
+                        docker tag sandbox-ci-cd_python-api %REGISTRY%/python-api:%IMAGE_TAG%
+                        docker tag sandbox-ci-cd_python-api %REGISTRY%/python-api:latest
+                        docker tag sandbox-ci-cd_r-api %REGISTRY%/r-api:%IMAGE_TAG%
+                        docker tag sandbox-ci-cd_r-api %REGISTRY%/r-api:latest
+                        docker tag sandbox-ci-cd_frontend %REGISTRY%/frontend:%IMAGE_TAG%
+                        docker tag sandbox-ci-cd_frontend %REGISTRY%/frontend:latest
                     '''
                 }
             }
         }
         
         stage('Security Scan') {
+            when {
+                expression { fileExists('C:\\trivy.exe') }
+            }
             steps {
                 script {
                     bat '''
-                        where trivy || echo "⚠️ Trivy non installé - scan ignoré"
-                        if exist "C:\\trivy.exe" (
-                            trivy image %REGISTRY%/spring-app:%IMAGE_TAG% || exit 0
-                            trivy image %REGISTRY%/python-api:%IMAGE_TAG% || exit 0
-                            trivy image %REGISTRY%/r-api:%IMAGE_TAG% || exit 0
-                        )
+                        trivy image --exit-code 0 --severity CRITICAL %REGISTRY%/spring-app:%IMAGE_TAG%
+                        trivy image --exit-code 0 --severity CRITICAL %REGISTRY%/python-api:%IMAGE_TAG%
+                        trivy image --exit-code 0 --severity CRITICAL %REGISTRY%/r-api:%IMAGE_TAG%
                     '''
                 }
             }
@@ -114,56 +128,74 @@ pipeline {
                     usernameVariable: 'DOCKER_USER', 
                     passwordVariable: 'DOCKER_PASS'
                 )]) {
-                    bat '''
-                        echo %DOCKER_PASS% | docker login -u %DOCKER_USER% --password-stdin
-                        docker push %REGISTRY%/spring-app:%IMAGE_TAG%
-                        docker push %REGISTRY%/python-api:%IMAGE_TAG%
-                        docker push %REGISTRY%/r-api:%IMAGE_TAG%
-                        docker push %REGISTRY%/frontend:%IMAGE_TAG%
-                        docker push %REGISTRY%/spring-app:latest
-                        docker push %REGISTRY%/python-api:latest
-                        docker push %REGISTRY%/r-api:latest
-                        docker push %REGISTRY%/frontend:latest
-                    '''
+                    script {
+                        timeout(time: 15, unit: 'MINUTES') {
+                            bat '''
+                                echo %DOCKER_PASS% | docker login -u %DOCKER_USER% --password-stdin
+                                docker push %REGISTRY%/spring-app:%IMAGE_TAG%
+                                docker push %REGISTRY%/python-api:%IMAGE_TAG%
+                                docker push %REGISTRY%/r-api:%IMAGE_TAG%
+                                docker push %REGISTRY%/frontend:%IMAGE_TAG%
+                            '''
+                        }
+                    }
                 }
             }
         }
         
         stage('Deploy') {
             steps {
-                bat '''
-                    docker-compose down || exit 0
-                    docker-compose up -d
-                '''
+                script {
+                    try {
+                        bat 'docker-compose down || exit 0'
+                        bat 'docker-compose up -d --remove-orphans'
+                    } catch (e) {
+                        error "Échec du déploiement: ${e.message}"
+                    }
+                }
             }
         }
     }
     
     post {
         always {
-            echo "Pipeline terminé - Vérification des conteneurs"
-            bat 'docker ps -a'
-            
             script {
-                try {
-                    def containers = bat(script: '@docker ps -aq -f "status=exited"', returnStdout: true).trim()
-                    if (containers) {
-                        bat '@docker rm -f $(docker ps -aq -f "status=exited")'
-                    }
-                    def images = bat(script: '@docker images -q -f "dangling=true"', returnStdout: true).trim()
-                    if (images) {
-                        bat '@docker rmi $(docker images -q -f "dangling=true")'
-                    }
-                } catch (e) {
-                    echo "Cleanup failed: ${e.message}"
-                }
+                echo "Nettoyage des ressources Docker..."
+                bat '''
+                    for /f "tokens=*" %%i in ('docker ps -aq') do docker rm -f %%i || true
+                    for /f "tokens=*" %%i in ('docker images -q -f "dangling=true"') do docker rmi %%i || true
+                    docker system prune -f || true
+                '''
+                
+                // Archive des logs
+                archiveArtifacts artifacts: '**/target/*.jar,**/docker-compose.log', allowEmptyArchive: true
             }
         }
         
         failure {
-            emailext body: 'Le build ${BUILD_STATUS}\nVoir les détails: ${BUILD_URL}',
-                    subject: 'Échec du build Jenkins',
-                    to: 'huimlisamar@gmail.com'
+            emailext body: '''
+                Build ${BUILD_STATUS}<br>
+                Job: ${JOB_NAME}<br>
+                Numéro: ${BUILD_NUMBER}<br>
+                Erreur: <a href="${BUILD_URL}console">Voir les logs</a><br>
+                Durée: ${currentBuild.durationString}
+            ''',
+            subject: 'Échec du build Jenkins - ${JOB_NAME} #${BUILD_NUMBER}',
+            to: 'huimlisamar@gmail.com',
+            mimeType: 'text/html'
+        }
+        
+        success {
+            emailext body: '''
+                Build ${BUILD_STATUS}<br>
+                Job: ${JOB_NAME}<br>
+                Numéro: ${BUILD_NUMBER}<br>
+                Détails: <a href="${BUILD_URL}console">Voir les logs</a><br>
+                Durée: ${currentBuild.durationString}
+            ''',
+            subject: 'Succès du build Jenkins - ${JOB_NAME} #${BUILD_NUMBER}',
+            to: 'huimlisamar@gmail.com',
+            mimeType: 'text/html'
         }
     }
 }
