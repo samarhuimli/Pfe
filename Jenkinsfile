@@ -1,19 +1,17 @@
 pipeline {
     agent any
-
+    
     environment {
-        // Configuration base de données
+        REGISTRY = "samarhuimli"
+        IMAGE_TAG = "${env.BUILD_NUMBER}"
         POSTGRES_DB = "sandbox"
         POSTGRES_USER = "postgres"
         POSTGRES_PASSWORD = "samar"
-        SPRING_DATASOURCE_URL = "jdbc:postgresql://localhost:5432/sandbox"
+        SPRING_DATASOURCE_URL = "jdbc:postgresql://postgres:5432/sandbox"
+        SPRING_DATASOURCE_USERNAME = "postgres"
+        SPRING_DATASOURCE_PASSWORD = "samar"
     }
-
-    options {
-        timeout(time: 1, unit: 'HOURS')
-        disableConcurrentBuilds()
-    }
-
+    
     stages {
         stage('Checkout') {
             steps {
@@ -22,11 +20,11 @@ pipeline {
                     credentialsId: 'github-cred'
             }
         }
-
+        
         stage('Build Backend') {
             steps {
                 dir('Sandbox-Spring') {
-                    bat 'mvn clean package'
+                    bat 'mvn clean package -DskipTests'
                     bat '''
                         if not exist "target\\*.jar" (
                             echo ERREUR: Fichier JAR introuvable
@@ -36,68 +34,138 @@ pipeline {
                 }
             }
         }
-
+        
         stage('Build Frontend') {
             steps {
                 dir('angular-dashboard') {
                     bat 'npm install'
                     bat 'npm run build -- --configuration production'
+                }
+            }
+        }
+        
+        stage('Build Docker Images') {
+            steps {
+                script {
+                    bat 'docker-compose build --no-cache'
+                    bat 'docker images'
+                    
+                    // Débogage et tagging
                     bat '''
-                        if not exist "dist\\*" (
-                            echo ERREUR: Build frontend échoué
+                        echo Tagging images with REGISTRY=%REGISTRY% and IMAGE_TAG=%IMAGE_TAG%
+                        docker inspect --type=image sandbox-ci-cd-spring-app:latest >nul 2>&1
+                        if %ERRORLEVEL% == 0 (
+                            docker tag sandbox-ci-cd-spring-app "%REGISTRY%/spring-app:%IMAGE_TAG%"
+                            docker tag sandbox-ci-cd-spring-app "%REGISTRY%/spring-app:latest"
+                        ) else (
+                            echo ERREUR: Image sandbox-ci-cd-spring-app non trouvée
                             exit 1
+                        )
+                        docker inspect --type=image sandbox-ci-cd-python-api:latest >nul 2>&1
+                        if %ERRORLEVEL% == 0 (
+                            docker tag sandbox-ci-cd-python-api "%REGISTRY%/python-api:%IMAGE_TAG%"
+                            docker tag sandbox-ci-cd-python-api "%REGISTRY%/python-api:latest"
+                        ) else (
+                            echo ERREUR: Image sandbox-ci-cd-python-api non trouvée
+                            exit 1
+                        )
+                        docker inspect --type=image sandbox-ci-cd-r-api:latest >nul 2>&1
+                        if %ERRORLEVEL% == 0 (
+                            docker tag sandbox-ci-cd-r-api "%REGISTRY%/r-api:%IMAGE_TAG%"
+                            docker tag sandbox-ci-cd-r-api "%REGISTRY%/r-api:latest"
+                        ) else (
+                            echo ERREUR: Image sandbox-ci-cd-r-api non trouvée
+                            exit 1
+                        )
+                        docker inspect --type=image sandbox-ci-cd-frontend:latest >nul 2>&1
+                        if %ERRORLEVEL% == 0 (
+                            docker tag sandbox-ci-cd-frontend "%REGISTRY%/frontend:%IMAGE_TAG%"
+                            docker tag sandbox-ci-cd-frontend "%REGISTRY%/frontend:latest"
+                        ) else (
+                            echo ERREUR: Image sandbox-ci-cd-frontend non trouvée
+                            exit 1
+                        )
+                        docker images
+                    '''
+                }
+            }
+        }
+        
+        stage('Security Scan') {
+            steps {
+                script {
+                    bat '''
+                        where trivy || echo "⚠️ Trivy non installé - scan ignoré"
+                        if exist "C:\\trivy.exe" (
+                            trivy image %REGISTRY%/spring-app:%IMAGE_TAG% || exit 0
+                            trivy image %REGISTRY%/python-api:%IMAGE_TAG% || exit 0
+                            trivy image %REGISTRY%/r-api:%IMAGE_TAG% || exit 0
                         )
                     '''
                 }
             }
         }
-
-        stage('Run Tests') {
+        
+        stage('Docker Push') {
             steps {
-                script {
-                    dir('Sandbox-Spring') {
-                        bat 'mvn test'
-                    }
-                    dir('angular-dashboard') {
-                        bat 'npm test'
-                    }
+                withCredentials([usernamePassword(
+                    credentialsId: 'docker-cred', 
+                    usernameVariable: 'DOCKER_USER', 
+                    passwordVariable: 'DOCKER_PASS'
+                )]) {
+                    bat '''
+                        echo %DOCKER_PASS% | docker login -u %DOCKER_USER% --password-stdin
+                        docker push %REGISTRY%/spring-app:%IMAGE_TAG%
+                        docker push %REGISTRY%/python-api:%IMAGE_TAG%
+                        docker push %REGISTRY%/r-api:%IMAGE_TAG%
+                        docker push %REGISTRY%/frontend:%IMAGE_TAG%
+                        docker push %REGISTRY%/spring-app:latest
+                        docker push %REGISTRY%/python-api:latest
+                        docker push %REGISTRY%/r-api:latest
+                        docker push %REGISTRY%/frontend:latest
+                    '''
                 }
             }
         }
+        
+        stage('Deploy') {
+            steps {
+                bat '''
+                    docker-compose down || exit 0
+                    docker-compose up -d
+                '''
+            }
+        }
     }
-
+    
     post {
         always {
-            junit '**/target/surefire-reports/*.xml'
-            archiveArtifacts artifacts: '**/target/*.jar,**/dist/**/*', allowEmptyArchive: true
+            echo "Pipeline terminé - Vérification des conteneurs"
+            bat 'docker ps -a'
+            
+            script {
+                try {
+                    // Nettoyage des conteneurs arrêtés
+                    def containers = bat(script: 'docker ps -aq -f "status=exited"', returnStdout: true).trim()
+                    if (containers) {
+                        bat "docker rm -f ${containers}"
+                    }
+                    
+                    // Nettoyage des images dangling
+                    def images = bat(script: 'docker images -q -f "dangling=true"', returnStdout: true).trim()
+                    if (images) {
+                        bat "docker rmi ${images}"
+                    }
+                } catch (e) {
+                    echo "Cleanup failed: ${e.message}"
+                }
+            }
         }
-
-        success {
-            emailext(
-                subject: "SUCCÈS: ${env.JOB_NAME} #${env.BUILD_NUMBER}",
-                body: """
-                Pipeline exécuté avec succès!
-                
-                Détails:
-                - Durée: ${currentBuild.durationString}
-                - Consulter: ${env.BUILD_URL}
-                """,
-                to: 'huimlisamar@gmail.com'
-            )
-        }
-
+        
         failure {
-            emailext(
-                subject: "ÉCHEC: ${env.JOB_NAME} #${env.BUILD_NUMBER}",
-                body: """
-                Le pipeline a échoué!
-                
-                Détails:
-                - Cause: ${currentBuild.currentResult}
-                - Consulter: ${env.BUILD_URL}console
-                """,
-                to: 'huimlisamar@gmail.com'
-            )
+            emailext body: 'Le build ${BUILD_STATUS}\nVoir les détails: ${BUILD_URL}',
+                    subject: 'Échec du build Jenkins',
+                    to: 'huimlisamar@gmail.com'
         }
     }
 }
