@@ -19,6 +19,7 @@ import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.*;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestClientException;
@@ -49,6 +50,7 @@ public class ExecutionController {
 
     @PostMapping("/executeR")
     @CrossOrigin(origins = "http://localhost:4200")
+    @PreAuthorize("hasRole('ADMIN')") // Ajouté : seuls les admins peuvent exécuter des scripts R
     public ResponseEntity<ExecutionResultDTO> executeRCode(@RequestBody Map<String, Object> request) {
         String code = (String) request.get("code");
         Long scriptId = request.get("scriptId") != null ? Long.valueOf(request.get("scriptId").toString()) : null;
@@ -156,6 +158,7 @@ public class ExecutionController {
 
     @PostMapping("/executePython")
     @CrossOrigin(origins = "http://localhost:4200")
+    @PreAuthorize("hasRole('ADMIN')") // Ajouté : seuls les admins peuvent exécuter des scripts Python
     public ResponseEntity<ExecutionResultDTO> executePythonCode(@RequestBody Map<String, Object> request) {
         String code = (String) request.get("code");
         Long scriptId = request.get("scriptId") != null ? Long.valueOf(request.get("scriptId").toString()) : null;
@@ -242,6 +245,7 @@ public class ExecutionController {
     }
 
     @PostMapping("/save")
+    @PreAuthorize("hasRole('ADMIN')") // Ajouté : seuls les admins peuvent sauvegarder des résultats
     public ResponseEntity<ExecutionResultDTO> saveExecutionResult(@RequestBody ExecutionResultDTO resultDTO) {
         ExecutionResult result = new ExecutionResult();
         result.setOutput(resultDTO.getOutput());
@@ -265,6 +269,7 @@ public class ExecutionController {
     }
 
     @DeleteMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN')") // Ajouté : seuls les admins peuvent supprimer des exécutions
     public ResponseEntity<?> deleteExecution(@PathVariable Long id) {
         ExecutionResult execution = executionResultRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException(
@@ -274,6 +279,7 @@ public class ExecutionController {
     }
 
     @GetMapping("/grouped")
+    @PreAuthorize("hasAnyRole('ADMIN', 'USER')") // Ajouté : accessible aux admins et utilisateurs
     public List<ExecutionGroupDTO> getGroupedExecutions() {
         return scriptRepository.findAll().stream()
                 .map(script -> {
@@ -293,12 +299,14 @@ public class ExecutionController {
     }
 
     @GetMapping("/countstatus/{status}")
+    @PreAuthorize("hasAnyRole('ADMIN', 'USER')") // Ajouté : accessible aux admins et utilisateurs
     public int countByStatus(@PathVariable String status) {
         return executionService.countByStatus(status);
     }
 
     @GetMapping("/execution-logs")
     @CrossOrigin(origins = "http://localhost:4200")
+    @PreAuthorize("hasAnyRole('ADMIN', 'USER')") // Ajouté : accessible aux admins et utilisateurs
     public ResponseEntity<List<ExecutionLog>> getExecutionLogs() {
         List<ExecutionLog> logs = executionLogRepository.findAll();
         return ResponseEntity.ok(logs);
@@ -306,6 +314,7 @@ public class ExecutionController {
 
     @DeleteMapping("/clear-execution-logs")
     @CrossOrigin(origins = "http://localhost:4200")
+    @PreAuthorize("hasRole('ADMIN')") // Ajouté : seuls les admins peuvent effacer les logs
     public ResponseEntity<Void> clearExecutionLogs() {
         executionLogRepository.deleteAll();
         return ResponseEntity.noContent().build();
@@ -313,14 +322,17 @@ public class ExecutionController {
 
     @DeleteMapping("/execution-logs/{id}")
     @CrossOrigin(origins = "http://localhost:4200")
+    @PreAuthorize("hasRole('ADMIN')") // Ajouté : seuls les admins peuvent supprimer un log
     public ResponseEntity<Void> deleteExecutionLog(@PathVariable Long id) {
         ExecutionLog log = executionLogRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Log non trouvé avec l'ID: " + id));
         executionLogRepository.delete(log);
         return ResponseEntity.noContent().build();
     }
+
     @PostMapping("/update-security")
     @CrossOrigin(origins = "http://localhost:4200")
+    @PreAuthorize("hasRole('ADMIN')") // Ajouté : seuls les admins peuvent mettre à jour la sécurité
     public ResponseEntity<String> updateSecurity(@RequestBody Map<String, Object> payload) {
         logger.info("Reception de la notification de mise à jour de sécurité: {}", payload);
 

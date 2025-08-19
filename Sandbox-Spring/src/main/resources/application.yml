@@ -1,19 +1,18 @@
 server:
   port: 8085
 
-
-  logging:
-    level:
-      org:
-        hibernate:
-          SQL: DEBUG
-          type.descriptor.sql.BasicBinder: TRACE
-        springframework:
-          web: TRACE
-          core: TRACE
-      com:
-        example:
-          sandboxspring: TRACE
+logging:
+  level:
+    org:
+      hibernate:
+        SQL: DEBUG
+        type.descriptor.sql.BasicBinder: TRACE
+      springframework:
+        web: TRACE
+        core: TRACE
+    com:
+      example:
+        sandboxspring: TRACE
 
 spring:
   datasource:
@@ -51,31 +50,7 @@ spring:
         queue-capacity: 100
         thread-name-prefix: app-thread-
 
-#  security:
-#    oauth2:
-#      client:
-#        registration:
-#          keycloak:
-#            client-id: spring-boot-app
-#            client-secret: KbhdS3uGvFsENF3tJfACXAerVcekYNCE
-#            authorization-grant-type: authorization_code
-#            scope: openid,profile,email,roles
-#            redirect-uri: "{baseUrl}/login/oauth2/code/keycloak"
-#        provider:
-#          keycloak:
-#            issuer-uri: http://localhost:8080/realms/sandbox-realm
-#      resourceserver:
-#        jwt:
-#          issuer-uri: http://localhost:8080/realms/sandbox-realm
-
-logging:
-  level:
-    org:
-      hibernate:
-        SQL: DEBUG
-        type.descriptor.sql.BasicBinder: TRACE
-    org.springframework:
-      web: DEBUG
-    com:
-      example:
-        sandboxspring: INFO
+# Configuration JWT
+jwt:
+  secret: "nPZCxv3VQDcXU8Z1z3A4dbYyM3z4a82o8sD5wUlVSpc=" # Clé Base64 (256 bits)
+  expiration: 3600000 # 1 heure en millisecondes
