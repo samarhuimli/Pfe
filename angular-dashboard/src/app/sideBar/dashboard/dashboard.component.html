@@ -1,1 +1,55 @@
-<p>dashboard works!</p>
+<div class="stats-grid">
+  <div class="stat-card total">
+    <div class="icon">
+      <span class="ti ti-layout-grid"></span>
+    </div>
+    <div class="content">
+      <div class="label">Total Scripts</div>
+      <div class="value" [attr.data-target]="totalScripts">{{ displayTotalScripts }}</div>
+    </div>
+  </div>
+
+  <div class="stat-card executed">
+    <div class="icon">
+      <span class="ti ti-player-play"></span>
+    </div>
+    <div class="content">
+      <div class="label">Executed</div>
+      <div class="value" [attr.data-target]="executedScripts">{{ displayExecutedScripts }}</div>
+    </div>
+  </div>
+
+  <div class="stat-card failed">
+    <div class="icon">
+      <span class="ti ti-alert-triangle"></span>
+    </div>
+    <div class="content">
+      <div class="label">Failed</div>
+      <div class="value" [attr.data-target]="failedScripts">{{ displayFailedScripts }}</div>
+    </div>
+  </div>
+
+  <div class="stat-card uploaded">
+    <div class="icon">
+      <span class="ti ti-upload"></span>
+    </div>
+    <div class="content">
+      <div class="label">Uploaded</div>
+      <div class="value" [attr.data-target]="uploadedScripts">{{ displayUploadedScripts }}</div>
+    </div>
+  </div>
+</div>
+<div class="charts-grid">
+  <div class="chart-card appear-1">
+    <app-line-chart></app-line-chart>
+  </div>
+  <div class="chart-card appear-2">
+    <app-line-chart></app-line-chart>
+  </div>
+  <div class="chart-card appear-3">
+    <app-line-chart></app-line-chart>
+  </div>
+  <div class="chart-card appear-4">
+    <app-line-chart></app-line-chart>
+  </div>
+</div>

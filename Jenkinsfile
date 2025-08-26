@@ -23,7 +23,7 @@ pipeline {
         
         stage('Build Backend') {
             steps {
-                dir('Sandbox-Spring') {
+                dir('Pfe/Sandbox-Spring') {
                     bat 'mvn clean package -DskipTests'
                     bat '''
                         if not exist "target\\*.jar" (
@@ -37,7 +37,7 @@ pipeline {
         
         stage('Build Frontend') {
             steps {
-                dir('angular-dashboard') {
+                dir('Pfe/angular-dashboard') {
                     bat 'npm install'
                     bat 'npm run build -- --configuration production'
                 }
@@ -47,7 +47,9 @@ pipeline {
         stage('Build Docker Images') {
             steps {
                 script {
-                    bat 'docker-compose build --no-cache'
+                    dir('Pfe') {
+                        bat 'docker-compose build --no-cache'
+                    }
                     bat 'docker images'
                     
                     // Débogage et tagging
@@ -130,10 +132,12 @@ pipeline {
         
         stage('Deploy') {
             steps {
-                bat '''
-                    docker-compose down || exit 0
-                    docker-compose up -d
-                '''
+                dir('Pfe') {
+                    bat '''
+                        docker-compose down || exit 0
+                        docker-compose up -d
+                    '''
+                }
             }
         }
     }
