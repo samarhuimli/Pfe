@@ -41,6 +41,7 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(
                                 "/api/auth/**",       // Endpoints publics (login/register/refresh)
+                                "/api/users/**",      // Endpoints utilisateurs publics
                                 "/actuator/health",   // Au besoin
                                 "/error"              // Erreur par défaut
                         ).permitAll()
@@ -64,13 +65,13 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOrigins(Arrays.asList("http://localhost:4200")); // Autorise ton frontend Angular
-        configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS")); // Méthodes autorisées
-        configuration.setAllowedHeaders(Arrays.asList("*")); // Tous les en-têtes
-        configuration.setAllowCredentials(true); // Autorise les cookies si nécessaire
+        configuration.setAllowedOriginPatterns(Arrays.asList("http://localhost:4200")); // Use allowedOriginPatterns instead
+        configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
+        configuration.setAllowedHeaders(Arrays.asList("*"));
+        configuration.setAllowCredentials(true);
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
-        source.registerCorsConfiguration("/**", configuration); // Applique à toutes les routes
+        source.registerCorsConfiguration("/**", configuration);
         return source;
     }
 

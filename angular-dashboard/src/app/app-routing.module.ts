@@ -11,7 +11,7 @@ const routes: Routes = [
     children: [
       {
         path: '',
-        redirectTo: '/scripts',
+        redirectTo: '/login',
         pathMatch: 'full'
       },
       {
@@ -48,7 +48,7 @@ const routes: Routes = [
         path: 'execution-history',
         loadComponent: () => import('./execution-history/execution-history.component').then(c => c.ExecutionHistoryComponent)
       },
-      
+
       {
         path: 'scripts/edit/:id',
         loadComponent: () => import('./script/script-edit/script-edit.component').then(c => c.ScriptEditComponent)
@@ -69,6 +69,18 @@ const routes: Routes = [
        {
         path: 'security',
         loadComponent: () => import('./security-manager/security-manager.component').then((c) => c. SecurityManagerComponent) // Ajout corrigé
+      },
+{
+        path: 'user',
+        loadComponent: () => import('./users/list-user/list-user.component').then((c) => c.ListUserComponent) // Ajout corrigé
+      },
+{
+        path: 'add-user',
+        loadComponent: () => import('./users/add-user/add-user.component').then((c) => c.AddUserComponent) // Ajout corrigé
+      },
+{
+        path: 'edit-user',
+        loadComponent: () => import('./users/edit-user/edit-user.component').then((c) => c.EditUserComponent) // Ajout corrigé
       }
 
 

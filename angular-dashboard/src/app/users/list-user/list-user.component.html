@@ -1,0 +1,68 @@
+<!-- user-list.component.html -->
+<div class="container">
+
+
+  <!-- Header -->
+  <div class="header">
+    <h1>Liste des Utilisateurs</h1>
+    <button class="create-btn" (click)="onCreateUser()">
+      <span class="create-icon">⊕</span>
+      Créer un utilisateur
+    </button>
+  </div>
+
+  <!-- Table -->
+  <div class="table-container">
+    <table>
+      <thead>
+        <tr>
+          <th>Nom</th>
+          <th>Rôle</th>
+          <th>Statut</th>
+          <th>Date d'inscription</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let user of users; " class="user-row">
+          <td>
+            <div class="user-info">
+              <div class="user-avatar">{{ user.initials }}</div>
+              <div class="user-details">
+                <h4>{{ user.name }}</h4>
+                <p>{{ user.email }}</p>
+              </div>
+            </div>
+          </td>
+          <td>
+            <span class="role-badge" [ngClass]="getRoleClass(user.role)">
+              {{ user.role }}
+            </span>
+          </td>
+          <td>
+            <span class="status-badge" [ngClass]="getStatusClass(user.status)">
+              {{ user.status }}
+            </span>
+          </td>
+          <td>{{ user.registrationDate }}</td>
+          <td>
+            <div class="actions">
+              <button
+                class="action-btn edit-btn"
+                (click)="onEditUser(user)"
+                title="Modifier {{ user.name }}">
+                Modifier
+              </button>
+              <button
+                class="action-btn delete-btn"
+                (click)="onDeleteUser(user)"
+                title="Supprimer {{ user.name }}">
+                Supprimer
+              </button>
+            </div>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>

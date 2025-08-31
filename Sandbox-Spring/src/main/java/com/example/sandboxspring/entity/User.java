@@ -13,7 +13,9 @@ import lombok.Data;
 public class User {
     @Id
     private String username;
+    private boolean enabled = true;
     private String password;
-    private String role; // ex. : "ROLE_USER", "ROLE_ADMIN"
-    private boolean enabled;
+    private String role;
+    private String validationCode;
+    private String email;
 }

@@ -2,7 +2,6 @@ import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { catchError, map, Observable, tap, throwError } from 'rxjs';
 import { ExecutionResultDTO } from '../models/execution-result.model';
-import { AuthService } from '../services/auth.service'; // Ajuste le chemin selon ta structure
 
 @Injectable({
   providedIn: 'root'
@@ -10,21 +9,10 @@ import { AuthService } from '../services/auth.service'; // Ajuste le chemin selo
 export class ExecutionService {
   private apiUrl = 'http://localhost:8085/api';
 
-  constructor(private http: HttpClient, private authService: AuthService) {}
-
-  private getAuthHeaders(): { headers: { Authorization: string; 'Content-Type': string } } {
-    const token = this.authService.getToken();
-    return {
-      headers: {
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json'
-      }
-    };
-  }
+  constructor(private http: HttpClient) {}
 
   deleteExecution(executionId: string): Observable<any> {
     return this.http.delete(`${this.apiUrl}/executions/${executionId}`, {
-      ...this.getAuthHeaders(),
       observe: 'response'
     }).pipe(
       tap(response => console.log('Réponse suppression:', response)),
@@ -42,7 +30,7 @@ export class ExecutionService {
       executionTime: result.executionTime != null ? result.executionTime.toString() : undefined
     };
     console.log('Envoi de la sauvegarde:', payload);
-    return this.http.post(`${this.apiUrl}/executions/save`, payload, this.getAuthHeaders()).pipe(
+    return this.http.post(`${this.apiUrl}/executions/save`, payload).pipe(
       tap(response => console.log('Réponse de la sauvegarde:', response)),
       catchError(err => {
         console.error('Erreur HTTP lors de la sauvegarde:', err);
@@ -54,10 +42,7 @@ export class ExecutionService {
   executeRCode(code: string, scriptId: number | null): Observable<ExecutionResultDTO> {
     const body = { code, scriptId };
     console.log('Envoi du script R au serveur:', body);
-    return this.http.post<ExecutionResultDTO>(`${this.apiUrl}/executions/executeR`, body, {
-      ...this.getAuthHeaders(),
-      observe: 'response'
-    }).pipe(
+    return this.http.post<ExecutionResultDTO>(`${this.apiUrl}/executions/executeR`, body, { observe: 'response' }).pipe(
       tap(response => console.log('Réponse de l\'exécution R:', response)),
       map(response => {
         const body = response.body as ExecutionResultDTO;
@@ -79,10 +64,7 @@ export class ExecutionService {
   executePythonCode(code: string, scriptId: number | null): Observable<ExecutionResultDTO> {
     const body = { code, scriptId };
     console.log('Envoi du script Python au serveur:', body);
-    return this.http.post<ExecutionResultDTO>(`${this.apiUrl}/executions/executePython`, body, {
-      ...this.getAuthHeaders(),
-      observe: 'response'
-    }).pipe(
+    return this.http.post<ExecutionResultDTO>(`${this.apiUrl}/executions/executePython`, body, { observe: 'response' }).pipe(
       tap(response => console.log('Réponse de l\'exécution Python:', response)),
       map(response => {
         const body = response.body as ExecutionResultDTO;
@@ -102,7 +84,7 @@ export class ExecutionService {
   }
 
   getAllExecutionsGrouped(): Observable<any[]> {
-    return this.http.get<any[]>(`${this.apiUrl}/executions/grouped`, this.getAuthHeaders()).pipe(
+    return this.http.get<any[]>(`${this.apiUrl}/executions/grouped`).pipe(
       tap(response => console.log('Réponse de getAllExecutionsGrouped:', response)),
       map(groups => groups.map(group => ({
         ...group,
@@ -119,7 +101,7 @@ export class ExecutionService {
   }
 
   getExecutionsByScriptId(scriptId: number): Observable<ExecutionResultDTO[]> {
-    return this.http.get<any[]>(`${this.apiUrl}/executions/byScriptId/${scriptId}`, this.getAuthHeaders()).pipe(
+    return this.http.get<any[]>(`${this.apiUrl}/executions/byScriptId/${scriptId}`).pipe(
       tap(response => console.log('Réponse de getExecutionsByScriptId:', response)),
       map(executions => executions.map(exec => ({
         ...exec,

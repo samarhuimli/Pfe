@@ -21,13 +21,15 @@ export interface NavigationItem {
 export const NavigationItems: NavigationItem[] = [
   {
     id: 'dashboard',
-    title: 'Dashboard',
+    title: 'Tableau de bord',
+    translate: 'navigation.dashboard',
     type: 'group',
     icon: 'icon-navigation',
     children: [
       {
         id: 'default',
-        title: 'Dashboard',
+        title: 'Tableau de bord',
+        translate: 'navigation.dashboardDefault',
         type: 'item',
         classes: 'nav-item',
         url: '/dashboard',
@@ -39,75 +41,84 @@ export const NavigationItems: NavigationItem[] = [
 
   {
     id: 'utilities',
-    title: 'UI Components',
+    title: 'scripts',
+    translate: 'navigation.uiComponents',
     type: 'group',
     icon: 'icon-navigation',
     children: [
       {
-        id: 'scripts-spaces', 
-        title: 'Scripts space',
+        id: 'scripts-spaces',
+        title: 'Espace des scripts',
+        translate: 'navigation.scriptsSpace',
         type: 'item',
         classes: 'nav-item',
         url: '/scripts-spaces',
         icon: 'font-size'
       },
-      
       {
-        id: 'tabler',
+        id: 'tabler-scripts',
         title: 'Scripts',
+        translate: 'navigation.scripts',
         type: 'item',
         classes: 'nav-item',
         url: '/scripts',
-        icon: 'ant-design',
-       
+        icon: 'ant-design'
       },
       {
-        id: 'tabler',
-        title: 'upload script',
+        id: 'tabler-upload',
+        title: 'Téléverser un script',
+        translate: 'navigation.uploadScript',
         type: 'item',
         classes: 'nav-item',
         url: '/upload-script',
-        icon: 'ant-design',
-       
+        icon: 'ant-design'
       }
     ]
   },
 
   {
     id: 'other',
-    title: 'Other',
+    title: 'Autres',
+    translate: 'navigation.other',
     type: 'group',
     icon: 'icon-navigation',
     children: [
       {
         id: 'color',
-        title: 'Execution History',
+        title: 'Historique d’exécution',
+        translate: 'navigation.executionHistory',
         type: 'item',
         classes: 'nav-item',
         url: '/execution-history',
         icon: 'bg-colors'
       },
+ {
+        id: 'color',
+        title: 'Gestion des utulisateurs',
+        translate: 'navigation.executionHistory',
+        type: 'item',
+        classes: 'nav-item',
+        url: '/user',
+        icon: 'user'
+      },
       {
-        id: 'tabler',
-        title: 'Logs',
+        id: 'tabler-logs',
+        title: 'Journaux',
+        translate: 'navigation.logs',
         type: 'item',
         classes: 'nav-item',
         url: '/logs',
-        icon: 'ant-design',
-       
+        icon: 'ant-design'
       },
       {
-        id: 'tabler',
-        title: 'Security Manager',
+        id: 'tabler-security',
+        title: 'Gestionnaire de sécurité',
+        translate: 'navigation.securityManager',
         type: 'item',
         classes: 'nav-item',
         url: '/security',
-        icon: 'ant-design',
-       
+        icon: 'ant-design'
       }
-
-      
-    
     ]
   }
 ];

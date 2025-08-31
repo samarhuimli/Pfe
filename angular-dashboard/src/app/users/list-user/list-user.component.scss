@@ -1,0 +1,256 @@
+/* user-list.component.css */
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 20px;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  background-color: #f8f9fa;
+  min-height: 100vh;
+}
+
+/* Breadcrumb */
+.breadcrumb {
+  display: flex;
+  align-items: center;
+  margin-bottom: 30px;
+  font-size: 14px;
+  color: #6c757d;
+}
+
+.breadcrumb-link {
+  color: #6c757d;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.breadcrumb-link:hover {
+  color: #495057;
+}
+
+.breadcrumb-separator {
+  margin: 0 10px;
+  color: #adb5bd;
+}
+
+.current {
+  color: #495057;
+  font-weight: 500;
+}
+
+/* Header */
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 30px;
+}
+
+.header h1 {
+  font-size: 2.5rem;
+  font-weight: 600;
+  color: #495057;
+  margin: 0;
+}
+
+.create-btn {
+  background-color: #007bff;
+  color: white;
+  border: none;
+  padding: 12px 24px;
+  border-radius: 8px;
+  font-size: 16px;
+  font-weight: 500;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transition: background-color 0.2s;
+}
+
+.create-btn:hover {
+  background-color: #0056b3;
+}
+
+.create-icon {
+  font-size: 18px;
+}
+
+/* Table */
+.table-container {
+  background: white;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+thead {
+  background-color: #f8f9fa;
+}
+
+th {
+  padding: 16px 20px;
+  text-align: left;
+  font-weight: 600;
+  font-size: 14px;
+  color: #495057;
+  border-bottom: 1px solid #e9ecef;
+}
+
+.user-row {
+  border-bottom: 1px solid #e9ecef;
+  transition: background-color 0.2s;
+}
+
+.user-row:hover {
+  background-color: #f8f9fa;
+}
+
+td {
+  padding: 16px 20px;
+  font-size: 14px;
+  color: #495057;
+  vertical-align: middle;
+}
+
+.user-info {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.user-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #007bff, #6f42c1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-weight: 600;
+  font-size: 16px;
+}
+
+.user-details h4 {
+  font-weight: 500;
+  margin: 0 0 2px 0;
+  color: #495057;
+}
+
+.user-details p {
+  color: #6c757d;
+  font-size: 13px;
+  margin: 0;
+}
+
+.role-badge {
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.role-admin {
+  background-color: #e3f2fd;
+  color: #1565c0;
+}
+
+.role-user {
+  background-color: #e8f5e8;
+  color: #2e7d32;
+}
+
+.role-moderator {
+  background-color: #fff3e0;
+  color: #ef6c00;
+}
+
+.status-badge {
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.status-active {
+  background-color: #e8f5e8;
+  color: #2e7d32;
+}
+
+.status-inactive {
+  background-color: #ffebee;
+  color: #c62828;
+}
+
+.actions {
+  display: flex;
+  gap: 8px;
+}
+
+.action-btn {
+  padding: 6px 12px;
+  border: 1px solid #ced4da;
+  background: white;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 12px;
+  color: #495057;
+  transition: all 0.2s;
+}
+
+.action-btn:hover {
+  background-color: #f8f9fa;
+  border-color: #adb5bd;
+}
+
+.edit-btn:hover {
+  border-color: #007bff;
+  color: #007bff;
+}
+
+.delete-btn:hover {
+  border-color: #dc3545;
+  color: #dc3545;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 15px;
+  }
+
+  .header h1 {
+    font-size: 2rem;
+  }
+
+  .container {
+    padding: 15px;
+  }
+
+  .table-container {
+    overflow-x: auto;
+  }
+
+  table {
+    min-width: 600px;
+  }
+
+  .actions {
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .action-btn {
+    font-size: 11px;
+    padding: 4px 8px;
+  }
+}
