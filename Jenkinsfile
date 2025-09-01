@@ -33,7 +33,7 @@ pipeline {
                     bat 'mvn clean test'
                     
                     echo "📊 Publication des rapports de tests"
-                    publishTestResults testResultsPattern: 'target/surefire-reports/*.xml'
+                    junit testResultsPattern: 'target/surefire-reports/*.xml'
                     
                     echo "📈 Analyse de la couverture de code"
                     bat 'mvn jacoco:report'
@@ -53,9 +53,14 @@ pipeline {
                     echo "🔨 Construction de l'application Spring Boot..."
                     bat 'mvn clean package -DskipTests'
                     bat '''
-                        if not exist "target\\*.jar" (
+                        dir target\\*.jar >nul 2>&1
+                        if %errorlevel% neq 0 (
                             echo ❌ ERREUR: Fichier JAR introuvable
+                            dir target
                             exit 1
+                        ) else (
+                            echo ✅ Fichier JAR trouvé:
+                            dir target\\*.jar
                         )
                     '''
                     echo "✅ Application construite avec succès"
@@ -68,49 +73,69 @@ pipeline {
                 script {
                     echo "🐳 Construction des images Docker..."
                     
-                    // Check Docker availability
-                    bat 'docker --version || echo "Docker non disponible"'
-                    bat 'docker info || echo "Docker daemon non accessible"'
+                    // Check Docker availability first
+                    try {
+                        bat 'docker --version'
+                        echo "✅ Docker CLI disponible"
+                    } catch (Exception e) {
+                        echo "❌ Docker CLI non disponible: ${e.getMessage()}"
+                        currentBuild.result = 'FAILURE'
+                        error("Docker CLI requis pour continuer")
+                    }
                     
                     try {
-                        // Build Spring Boot API (matches docker-compose service: spring-app)
+                        bat 'docker info'
+                        echo "✅ Docker daemon accessible"
+                    } catch (Exception e) {
+                        echo "❌ Docker daemon non accessible: ${e.getMessage()}"
+                        echo "⚠️ Vérifiez que Docker Desktop est démarré"
+                        currentBuild.result = 'FAILURE'
+                        error("Docker daemon requis pour continuer")
+                    }
+                    
+                    // Build images one by one with detailed error handling
+                    try {
+                        // Build Spring Boot API first (most likely to succeed)
                         dir('Sandbox-Spring') {
                             echo "🔨 Construction image Spring Boot..."
-                            bat "docker build -t ${PROJECT_NAME}/spring-app:${IMAGE_TAG} ."
+                            bat "docker build -t ${PROJECT_NAME}/spring-app:${IMAGE_TAG} . || exit 1"
                             bat "docker tag ${PROJECT_NAME}/spring-app:${IMAGE_TAG} ${PROJECT_NAME}/spring-app:latest"
                             echo "✅ Image Spring Boot créée"
                         }
                         
-                        // Build Angular Dashboard (matches docker-compose service: frontend)
-                        dir('angular-dashboard') {
-                            echo "🔨 Construction image Angular..."
-                            bat "docker build -t ${PROJECT_NAME}/frontend:${IMAGE_TAG} ."
-                            bat "docker tag ${PROJECT_NAME}/frontend:${IMAGE_TAG} ${PROJECT_NAME}/frontend:latest"
-                            echo "✅ Image Angular créée"
-                        }
-                        
-                        // Build Python API (matches docker-compose service: python-api)
+                        // Build Python API (simpler than Angular/R)
                         dir('python-api') {
                             echo "🔨 Construction image Python..."
-                            bat "docker build -t ${PROJECT_NAME}/python-api:${IMAGE_TAG} ."
+                            bat "docker build -t ${PROJECT_NAME}/python-api:${IMAGE_TAG} . || exit 1"
                             bat "docker tag ${PROJECT_NAME}/python-api:${IMAGE_TAG} ${PROJECT_NAME}/python-api:latest"
                             echo "✅ Image Python créée"
                         }
                         
-                        // Build R API (matches docker-compose service: r-api)
+                        // Build Angular Dashboard (can be slow)
+                        dir('angular-dashboard') {
+                            echo "🔨 Construction image Angular (peut prendre du temps)..."
+                            bat "docker build -t ${PROJECT_NAME}/frontend:${IMAGE_TAG} . || exit 1"
+                            bat "docker tag ${PROJECT_NAME}/frontend:${IMAGE_TAG} ${PROJECT_NAME}/frontend:latest"
+                            echo "✅ Image Angular créée"
+                        }
+                        
+                        // Build R API (most complex)
                         dir('r-api') {
-                            echo "🔨 Construction image R..."
-                            bat "docker build -t ${PROJECT_NAME}/r-api:${IMAGE_TAG} ."
+                            echo "🔨 Construction image R (peut prendre du temps)..."
+                            bat "docker build -t ${PROJECT_NAME}/r-api:${IMAGE_TAG} . || exit 1"
                             bat "docker tag ${PROJECT_NAME}/r-api:${IMAGE_TAG} ${PROJECT_NAME}/r-api:latest"
                             echo "✅ Image R créée"
                         }
                         
                         echo "✅ Toutes les images Docker construites avec succès"
+                        bat 'docker images | findstr %PROJECT_NAME%'
                         
                     } catch (Exception e) {
                         echo "❌ Erreur lors de la construction Docker: ${e.getMessage()}"
-                        bat 'docker images || echo "Impossible de lister les images"'
-                        throw e
+                        bat 'docker images | findstr %PROJECT_NAME% || echo "Aucune image trouvée"'
+                        bat 'docker ps -a || echo "Impossible de lister les conteneurs"'
+                        currentBuild.result = 'FAILURE'
+                        error("Échec de la construction Docker")
                     }
                 }
             }
