@@ -12,14 +12,14 @@ pipeline {
         stage('Début du Pipeline') {
             steps {
                 echo "🚀 Démarrage du pipeline - Build #${BUILD_NUMBER}"
-                echo "📋 Branche: ${env.BRANCH_NAME ?: 'main'}"
+                echo "📋 Branche: ${env.BRANCH_NAME ?: 'devops'}"
                 echo "⏰ Timestamp: ${new Date()}"
             }
         }
         
         stage('Checkout code depuis GitHub') {
             steps {
-                git branch: 'main', 
+                git branch: 'devops', 
                     url: 'https://github.com/samarhuimli/Pfe.git', 
                     credentialsId: "${GITHUB_CREDENTIALS}"
                 echo "✅ Code récupéré depuis GitHub"
