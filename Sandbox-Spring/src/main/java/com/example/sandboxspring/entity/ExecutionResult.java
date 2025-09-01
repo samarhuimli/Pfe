@@ -16,25 +16,21 @@ import java.time.LocalDateTime;
 public class ExecutionResult {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(columnDefinition = "BIGSERIAL")
     private Long id;
 
     @Lob
     @JdbcTypeCode(SqlTypes.LONGVARCHAR)
-    @Column(columnDefinition = "TEXT")
     private String output;
 
     @Lob
     @JdbcTypeCode(SqlTypes.LONGVARCHAR)
-    @Column(columnDefinition = "TEXT")
     private String error;
 
     @Column(name = "execution_time")
     private String executionTime; // Champ ajouté avec colonne
 
     @CreationTimestamp
-    @Column(name = "executed_at", nullable = false, updatable = false,
-            columnDefinition = "TIMESTAMP WITH TIME ZONE")
+    @Column(name = "executed_at", nullable = false, updatable = false)
     private LocalDateTime executedAt;
 
     @ManyToOne(fetch = FetchType.LAZY)
@@ -43,8 +39,7 @@ public class ExecutionResult {
     private Script script;
 
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false, length = 20,
-            columnDefinition = "VARCHAR(20) CHECK (status IN ('SUCCESS','FAILED','TIMEOUT'))")
+    @Column(nullable = false, length = 20)
     private ExecutionStatus status;
 
     public enum ExecutionStatus {

@@ -4,7 +4,7 @@ pipeline {
     environment {
         PROJECT_NAME = 'sandbox'
         IMAGE_TAG = "${BUILD_NUMBER}"
-        EMAIL_RECIPIENTS = 'samar.huimli@example.com'  // Update with your email
+        EMAIL_RECIPIENTS = 'huimlisamar@gmail.com'  // Update with your email
         GITHUB_CREDENTIALS = 'github-cred'
     }
     

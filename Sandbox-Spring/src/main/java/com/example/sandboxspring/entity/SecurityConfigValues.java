@@ -12,6 +12,7 @@ public class SecurityConfigValues {
     @JoinColumn(name = "config_id")
     private SecurityConfig config;
 
+    @Column(name = "`value`")
     private String value;
 
     // Getters and Setters
