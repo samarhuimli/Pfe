@@ -58,17 +58,32 @@ export class UserService {
       );
   }
 
-  // Update user
-  updateUser(username: string, user: Partial<User>): Observable<User> {
-    return this.http.put<User>(`${this.API_URL}/${username}`, user)
-      .pipe(
-        catchError(this.handleError)
-      );
+  // Delete user by username or name
+  deleteUser(identifier: string): Observable<{ message: string }> {
+    // Encode the identifier to handle special characters
+    const encodedIdentifier = encodeURIComponent(identifier);
+    
+    return this.http.delete<{ message: string }>(
+      `${this.API_URL}/${encodedIdentifier}`,
+      {
+        headers: {
+          'Content-Type': 'application/json',
+          // Add any required authentication headers here
+        },
+        withCredentials: true // Include this if you're using cookies for auth
+      }
+    ).pipe(
+      catchError(error => {
+        console.error('Error in deleteUser:', error);
+        // You can add more specific error handling here if needed
+        return throwError(() => error);
+      })
+    );
   }
 
-  // Delete user
-  deleteUser(username: string): Observable<{message: string}> {
-    return this.http.delete<{message: string}>(`${this.API_URL}/${username}`)
+  // Update user
+  updateUser(username: string, userData: Partial<User>): Observable<User> {
+    return this.http.put<User>(`${this.API_URL}/${username}`, userData)
       .pipe(
         catchError(this.handleError)
       );
@@ -84,26 +99,26 @@ export class UserService {
 
   // Update validation code
   updateValidationCode(username: string, validationCode: string): Observable<User> {
-    return this.http.put<User>(`${this.API_URL}/${username}/validation-code`, { validationCode })
-      .pipe(
-        catchError(this.handleError)
-      );
+    const encodedUsername = encodeURIComponent(username);
+    return this.http.put<User>(`${this.API_URL}/${encodedUsername}/validation-code`, { validationCode }).pipe(
+      catchError(this.handleError)
+    );
   }
 
   // Enable user
   enableUser(username: string): Observable<{message: string, user: User}> {
-    return this.http.put<{message: string, user: User}>(`${this.API_URL}/${username}/enable`, {})
-      .pipe(
-        catchError(this.handleError)
-      );
+    const encodedUsername = encodeURIComponent(username);
+    return this.http.put<{message: string, user: User}>(`${this.API_URL}/${encodedUsername}/enable`, {}).pipe(
+      catchError(this.handleError)
+    );
   }
 
   // Disable user
   disableUser(username: string): Observable<{message: string, user: User}> {
-    return this.http.put<{message: string, user: User}>(`${this.API_URL}/${username}/disable`, {})
-      .pipe(
-        catchError(this.handleError)
-      );
+    const encodedUsername = encodeURIComponent(username);
+    return this.http.put<{message: string, user: User}>(`${this.API_URL}/${encodedUsername}/disable`, {}).pipe(
+      catchError(this.handleError)
+    );
   }
 
   // Check if user exists
@@ -138,28 +153,22 @@ export class UserService {
   }
 
   // Error handling
-  private handleError(error: HttpErrorResponse): Observable<never> {
-    let errorMessage = 'Une erreur inconnue est survenue';
-    
+  private handleError(error: HttpErrorResponse) {
+    let errorMessage = 'An unknown error occurred!';
     if (error.error instanceof ErrorEvent) {
       // Client-side error
-      errorMessage = `Erreur: ${error.error.message}`;
+      errorMessage = `Error: ${error.error.message}`;
     } else {
       // Server-side error
-      if (error.error && error.error.error) {
-        errorMessage = error.error.error;
-      } else if (error.status === 404) {
-        errorMessage = 'Utilisateur non trouvé';
-      } else if (error.status === 400) {
-        errorMessage = 'Données invalides';
-      } else if (error.status === 500) {
-        errorMessage = 'Erreur serveur interne';
-      } else {
-        errorMessage = `Erreur ${error.status}: ${error.message}`;
-      }
+      errorMessage = `Error Code: ${error.status}\nMessage: ${error.error?.message || error.message}`;
     }
-    
-    console.error('API Error:', error);
-    return throwError(() => new Error(errorMessage));
+    console.error(errorMessage);
+    return throwError(() => ({
+      error: {
+        message: errorMessage,
+        error: error.error?.error || error.message
+      },
+      message: error.error?.message || error.message
+    }));
   }
 }

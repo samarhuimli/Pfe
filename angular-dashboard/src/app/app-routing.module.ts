@@ -79,7 +79,7 @@ const routes: Routes = [
         loadComponent: () => import('./users/add-user/add-user.component').then((c) => c.AddUserComponent) // Ajout corrigé
       },
 {
-        path: 'edit-user',
+        path: 'edit-user/:id',
         loadComponent: () => import('./users/edit-user/edit-user.component').then((c) => c.EditUserComponent) // Ajout corrigé
       }
 

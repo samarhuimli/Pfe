@@ -3,9 +3,10 @@ import { CommonModule } from '@angular/common';
 import { Component, OnInit } from '@angular/core';
 import { Router } from '@angular/router';
 import { UserService } from '../../services/user.service';
+import Swal from 'sweetalert2';
 
 export interface User {
-  id: number;
+  id?: number;
   name: string;
   email: string;
   role: 'Admin' | 'Utilisateur' | 'Modérateur' | string;
@@ -13,6 +14,7 @@ export interface User {
   registrationDate: string;
   initials: string;
   username?: string;
+  enabled?: boolean;
 }
 
 @Component({
@@ -39,15 +41,16 @@ export class ListUserComponent implements OnInit {
   private loadUsers(): void {
     this.isLoading = true;
     this.userService.getAllUsers().subscribe({
-      next: (backendUsers) => {
+      next: (backendUsers: any[]) => {
         this.users = backendUsers.map(user => ({
-          id: this.generateId(), // You might want to use actual user ID from backend
-          name: user.username, // Or map to actual name if available
+          id: user.id, // Will be undefined if not present
+          name: user.name || user.username, // Use name if available, otherwise username
           email: user.email || `${user.username}@example.com`,
-          role: this.mapRole(user.role),
+          username: user.username,
+          role: this.mapRole(user.role || 'Utilisateur'),
           status: user.enabled ? 'Actif' : 'Inactif',
-          registrationDate: new Date().toLocaleDateString(), // Update with actual date from backend
-          initials: this.getInitials(user.username)
+          registrationDate: user.registrationDate || new Date().toLocaleDateString(),
+          initials: this.getInitials(user.name || user.username || '')
         }));
         this.isLoading = false;
       },
@@ -89,8 +92,64 @@ export class ListUserComponent implements OnInit {
   }
 
   onDeleteUser(user: User): void {
-    console.log('Supprimer utilisateur:', user);
-    // Logique pour supprimer un utilisateur
+    if (!user.username) {
+      console.error('Cannot delete user: username is missing', user);
+      Swal.fire('Erreur', 'Impossible de supprimer l\'utilisateur: nom d\'utilisateur manquant', 'error');
+      return;
+    }
+
+    // Show SweetAlert confirmation dialog
+    Swal.fire({
+      title: 'Êtes-vous sûr?',
+      text: `Voulez-vous vraiment supprimer l'utilisateur "${user.name || user.username}" ?`,
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#3085d6',
+      cancelButtonColor: '#d33',
+      confirmButtonText: 'Oui, supprimer!',
+      cancelButtonText: 'Annuler',
+      reverseButtons: true
+    }).then((result) => {
+      if (result.isConfirmed) {
+        // Show loading indicator
+        Swal.fire({
+          title: 'Suppression en cours...',
+          allowOutsideClick: false,
+          didOpen: () => {
+            Swal.showLoading();
+          }
+        });
+
+        console.log('Attempting to delete user:', user.username);
+        
+        // Call the delete API
+        this.userService.deleteUser(user.username).subscribe({
+          next: (response) => {
+            console.log('Delete response:', response);
+            // Remove the user from the local array for immediate UI update
+            this.users = this.users.filter(u => u.username !== user.username);
+            // Show success message
+            Swal.fire(
+              'Supprimé!',
+              response?.message || 'L\'utilisateur a été supprimé avec succès.',
+              'success'
+            );
+          },
+          error: (error) => {
+            console.error('❌ Error deleting user:', error);
+            const errorMessage = error.error?.message || 
+                              error.error?.error || 
+                              error.message || 
+                              'Une erreur est survenue lors de la suppression';
+            Swal.fire(
+              'Erreur!',
+              `Échec de la suppression: ${errorMessage}`,
+              'error'
+            );
+          }
+        });
+      }
+    });
   }
 
   navigateToHome(): void {

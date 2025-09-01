@@ -17,7 +17,7 @@
 
   <!-- Toast Notifications -->
   <div class="toast-container">
-    <div class="toast success-toast" *ngIf="showSuccessToast" [@slideIn]>
+    <div class="toast success-toast" [class.show]="showSuccessToast" *ngIf="showSuccessToast">
       <div class="toast-content">
         <svg class="toast-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
           <path d="M20 6L9 17l-5-5"></path>
@@ -32,7 +32,7 @@
       </div>
     </div>
 
-    <div class="toast error-toast" *ngIf="showErrorToast" [@slideIn]>
+    <div class="toast error-toast" [class.show]="showErrorToast" *ngIf="showErrorToast">
       <div class="toast-content">
         <svg class="toast-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
           <circle cx="12" cy="12" r="10"></circle>
