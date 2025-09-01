@@ -7,12 +7,12 @@ COPY . .
 
 # Installer les dépendances et construire le projet
 RUN npm install
-RUN npm run build
+RUN npm run build --prod
 
 # Étape 2 : Image finale avec NGINX
 FROM nginx:alpine
 # Copier les fichiers compilés Angular dans le dossier servi par NGINX
-COPY --from=build /app/dist /usr/share/nginx/html
+COPY --from=build /app/dist/mantis-free-version /usr/share/nginx/html
 
 # Optionnel : Copier une configuration NGINX personnalisée si tu en as une
 # COPY nginx.conf /etc/nginx/nginx.conf

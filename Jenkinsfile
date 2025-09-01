@@ -68,31 +68,50 @@ pipeline {
                 script {
                     echo "🐳 Construction des images Docker..."
                     
-                    // Build Spring Boot API (matches docker-compose service: spring-app)
-                    dir('Sandbox-Spring') {
-                        bat "docker build -t ${PROJECT_NAME}/spring-app:${IMAGE_TAG} ."
-                        bat "docker tag ${PROJECT_NAME}/spring-app:${IMAGE_TAG} ${PROJECT_NAME}/spring-app:latest"
-                    }
+                    // Check Docker availability
+                    bat 'docker --version || echo "Docker non disponible"'
+                    bat 'docker info || echo "Docker daemon non accessible"'
                     
-                    // Build Angular Dashboard (matches docker-compose service: frontend)
-                    dir('angular-dashboard') {
-                        bat "docker build -t ${PROJECT_NAME}/frontend:${IMAGE_TAG} ."
-                        bat "docker tag ${PROJECT_NAME}/frontend:${IMAGE_TAG} ${PROJECT_NAME}/frontend:latest"
+                    try {
+                        // Build Spring Boot API (matches docker-compose service: spring-app)
+                        dir('Sandbox-Spring') {
+                            echo "🔨 Construction image Spring Boot..."
+                            bat "docker build -t ${PROJECT_NAME}/spring-app:${IMAGE_TAG} ."
+                            bat "docker tag ${PROJECT_NAME}/spring-app:${IMAGE_TAG} ${PROJECT_NAME}/spring-app:latest"
+                            echo "✅ Image Spring Boot créée"
+                        }
+                        
+                        // Build Angular Dashboard (matches docker-compose service: frontend)
+                        dir('angular-dashboard') {
+                            echo "🔨 Construction image Angular..."
+                            bat "docker build -t ${PROJECT_NAME}/frontend:${IMAGE_TAG} ."
+                            bat "docker tag ${PROJECT_NAME}/frontend:${IMAGE_TAG} ${PROJECT_NAME}/frontend:latest"
+                            echo "✅ Image Angular créée"
+                        }
+                        
+                        // Build Python API (matches docker-compose service: python-api)
+                        dir('python-api') {
+                            echo "🔨 Construction image Python..."
+                            bat "docker build -t ${PROJECT_NAME}/python-api:${IMAGE_TAG} ."
+                            bat "docker tag ${PROJECT_NAME}/python-api:${IMAGE_TAG} ${PROJECT_NAME}/python-api:latest"
+                            echo "✅ Image Python créée"
+                        }
+                        
+                        // Build R API (matches docker-compose service: r-api)
+                        dir('r-api') {
+                            echo "🔨 Construction image R..."
+                            bat "docker build -t ${PROJECT_NAME}/r-api:${IMAGE_TAG} ."
+                            bat "docker tag ${PROJECT_NAME}/r-api:${IMAGE_TAG} ${PROJECT_NAME}/r-api:latest"
+                            echo "✅ Image R créée"
+                        }
+                        
+                        echo "✅ Toutes les images Docker construites avec succès"
+                        
+                    } catch (Exception e) {
+                        echo "❌ Erreur lors de la construction Docker: ${e.getMessage()}"
+                        bat 'docker images || echo "Impossible de lister les images"'
+                        throw e
                     }
-                    
-                    // Build Python API (matches docker-compose service: python-api)
-                    dir('python-api') {
-                        bat "docker build -t ${PROJECT_NAME}/python-api:${IMAGE_TAG} ."
-                        bat "docker tag ${PROJECT_NAME}/python-api:${IMAGE_TAG} ${PROJECT_NAME}/python-api:latest"
-                    }
-                    
-                    // Build R API (matches docker-compose service: r-api)
-                    dir('r-api') {
-                        bat "docker build -t ${PROJECT_NAME}/r-api:${IMAGE_TAG} ."
-                        bat "docker tag ${PROJECT_NAME}/r-api:${IMAGE_TAG} ${PROJECT_NAME}/r-api:latest"
-                    }
-                    
-                    echo "✅ Images Docker construites avec succès"
                 }
             }
         }
@@ -102,18 +121,40 @@ pipeline {
                 script {
                     echo "🔒 Analyse de sécurité avec Trivy..."
                     
-                    // Scan each image
-                    def images = ["${PROJECT_NAME}/spring-app:latest", "${PROJECT_NAME}/frontend:latest", 
-                                 "${PROJECT_NAME}/python-api:latest", "${PROJECT_NAME}/r-api:latest"]
-                    
-                    images.each { image ->
-                        echo "🔍 Scan de sécurité pour ${image}"
-                        bat """
-                            trivy image --format json --output trivy-report-${image.replace(':', '-').replace('/', '-')}.json ${image} || echo "Trivy scan completed with warnings"
-                        """
+                    // Check if Trivy is available
+                    def trivyAvailable = false
+                    try {
+                        bat 'trivy --version'
+                        trivyAvailable = true
+                        echo "✅ Trivy disponible"
+                    } catch (Exception e) {
+                        echo "⚠️ Trivy non disponible - analyse de sécurité ignorée"
+                        echo "Pour installer Trivy: https://aquasecurity.github.io/trivy/latest/getting-started/installation/"
                     }
                     
-                    echo "✅ Analyse de sécurité terminée"
+                    if (trivyAvailable) {
+                        try {
+                            // Scan each image
+                            echo "🔍 Scan Spring Boot image..."
+                            bat "trivy image --exit-code 0 --severity HIGH,CRITICAL ${PROJECT_NAME}/spring-app:${IMAGE_TAG}"
+                            
+                            echo "🔍 Scan Angular image..."
+                            bat "trivy image --exit-code 0 --severity HIGH,CRITICAL ${PROJECT_NAME}/frontend:${IMAGE_TAG}"
+                            
+                            echo "🔍 Scan Python API image..."
+                            bat "trivy image --exit-code 0 --severity HIGH,CRITICAL ${PROJECT_NAME}/python-api:${IMAGE_TAG}"
+                            
+                            echo "🔍 Scan R API image..."
+                            bat "trivy image --exit-code 0 --severity HIGH,CRITICAL ${PROJECT_NAME}/r-api:${IMAGE_TAG}"
+                            
+                            echo "✅ Analyse de sécurité terminée"
+                        } catch (Exception e) {
+                            echo "⚠️ Erreur lors du scan de sécurité: ${e.getMessage()}"
+                            echo "Le pipeline continue malgré l'erreur de scan"
+                        }
+                    } else {
+                        echo "⚠️ Analyse de sécurité ignorée - Trivy non installé"
+                    }
                 }
             }
             post {
