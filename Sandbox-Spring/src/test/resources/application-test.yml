@@ -18,7 +18,7 @@ spring:
     console:
       enabled: true
 
-# Disable JWT for tests
+# JWT configuration for tests (valid Base64 key)
 jwt:
-  secret: "test-secret-key-for-testing-only"
+  secret: "dGVzdC1zZWNyZXQta2V5LWZvci10ZXN0aW5nLW9ubHktdmFsaWQtYmFzZTY0LWtleQ=="
   expiration: 3600000
