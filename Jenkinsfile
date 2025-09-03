@@ -33,7 +33,7 @@ pipeline {
                     bat 'mvn clean test'
                     
                     echo "📊 Publication des rapports de tests"
-                    junit testResults: 'target/surefire-reports/*.xml'
+                    junit testResultsPattern: 'target/surefire-reports/*.xml'
                     
                     echo "📈 Analyse de la couverture de code"
                     bat 'mvn jacoco:report'
@@ -222,9 +222,10 @@ pipeline {
                     bat '''
                         timeout 60 >nul 2>&1 || (
                             echo ⚡ Test de connectivité des services...
-                            curl -f http://localhost:8080/actuator/health || echo "API Spring Boot non accessible"
+                            curl -f http://localhost:8085/actuator/health || echo "API Spring Boot non accessible"
                             curl -f http://localhost:4200 || echo "Frontend Angular non accessible"
-                            curl -f http://localhost:5000 || echo "API Python non accessible"
+                            curl -f http://localhost:8084 || echo "API Python non accessible"
+                            curl -f http://localhost:8086 || echo "API R non accessible"
                         )
                     '''
                     
@@ -272,7 +273,6 @@ pipeline {
                             <li>✅ Build de l'application</li>
                             <li>✅ Construction des images Docker</li>
                             <li>✅ Scan de sécurité</li>
-                            <li>✅ Push vers le registry</li>
                             <li>✅ Déploiement</li>
                         </ul>
                     """,

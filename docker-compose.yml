@@ -64,23 +64,8 @@ services:
       - POSTGRES_DB=${POSTGRES_DB}
       - POSTGRES_USER=${POSTGRES_USER}
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
-      - POSTGRES_HOST=postgres-sandbox
+      - POSTGRES_HOST=postgres
       - POSTGRES_PORT=5432
-    networks:
-      - sandbox-net
-
-  keycloak:
-    image: quay.io/keycloak/keycloak:22.0
-    container_name: keycloak
-    environment:
-      KEYCLOAK_ADMIN: admin
-      KEYCLOAK_ADMIN_PASSWORD: admin
-    command: start-dev
-    ports:
-      - "8080:8080"
-    depends_on:
-      postgres:
-        condition: service_healthy
     networks:
       - sandbox-net
 
