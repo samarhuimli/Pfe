@@ -228,21 +228,26 @@ pipeline {
                 script {
                     echo "🧹 Vérification et nettoyage post-déploiement..."
                     
-                    // Health checks
-                    echo "🏥 Vérification de l'état des services..."
-                    bat '''
-                        timeout 60 >nul 2>&1 || (
-                            echo ⚡ Test de connectivité des services...
-                            curl -f http://localhost:8085/actuator/health || echo "API Spring Boot non accessible"
-                            curl -f http://localhost:4200 || echo "Frontend Angular non accessible"
-                            curl -f http://localhost:8084 || echo "API Python non accessible"
-                            curl -f http://localhost:8086 || echo "API R non accessible"
-                        )
-                    '''
-                    
-                    // Cleanup old images
-                    echo "🗑️ Nettoyage des anciennes images..."
-                    bat 'docker image prune -f || echo "Cleanup completed"'
+                    if (env.DOCKER_AVAILABLE != 'false') {
+                        // Health checks only if Docker is available
+                        echo "🏥 Vérification de l'état des services..."
+                        bat '''
+                            timeout 60 >nul 2>&1 || (
+                                echo ⚡ Test de connectivité des services...
+                                curl -f http://localhost:8085/actuator/health || echo "API Spring Boot non accessible"
+                                curl -f http://localhost:4200 || echo "Frontend Angular non accessible"
+                                curl -f http://localhost:8084 || echo "API Python non accessible"
+                                curl -f http://localhost:8086 || echo "API R non accessible"
+                            )
+                        '''
+                        
+                        // Cleanup old images
+                        echo "🗑️ Nettoyage des anciennes images..."
+                        bat 'docker image prune -f || echo "Cleanup completed"'
+                    } else {
+                        echo "⚠️ Docker non disponible - vérifications de santé ignorées"
+                        echo "✅ Tests et build terminés avec succès"
+                    }
                     
                     echo "✅ Post-build terminé"
                 }
