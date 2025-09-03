@@ -33,7 +33,7 @@ pipeline {
                     bat 'mvn clean test'
                     
                     echo "📊 Publication des rapports de tests"
-                    junit testResultsPattern: 'target/surefire-reports/*.xml'
+                    junit testResults: 'target/surefire-reports/*.xml'
                     
                     echo "📈 Analyse de la couverture de code"
                     bat 'mvn jacoco:report'
