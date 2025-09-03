@@ -36,7 +36,7 @@ pipeline {
                     junit testResults: 'target/surefire-reports/*.xml'
                     
                     echo "📈 Analyse de la couverture de code"
-                    bat 'mvn jacoco:report'
+                    bat 'mvn jacoco:report || echo "⚠️ JaCoCo report generation failed - continuing pipeline"'
                 }
             }
             post {
