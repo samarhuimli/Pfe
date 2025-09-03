@@ -147,46 +147,48 @@ pipeline {
         }
         
         stage('Security Scan avec Trivy') {
-            when {
-                expression { env.DOCKER_AVAILABLE != 'false' }
-            }
             steps {
                 script {
-                    echo "🔒 Analyse de sécurité avec Trivy..."
-                    
-                    // Check if Trivy is available
-                    def trivyAvailable = false
-                    try {
-                        bat 'trivy --version'
-                        trivyAvailable = true
-                        echo "✅ Trivy disponible"
-                    } catch (Exception e) {
-                        echo "⚠️ Trivy non disponible - analyse de sécurité ignorée"
-                        echo "Pour installer Trivy: https://aquasecurity.github.io/trivy/latest/getting-started/installation/"
-                    }
-                    
-                    if (trivyAvailable) {
+                    if (env.DOCKER_AVAILABLE != 'false') {
+                        echo "🔒 Analyse de sécurité avec Trivy..."
+                        
+                        // Check if Trivy is available
+                        def trivyAvailable = false
                         try {
-                            // Scan each image
-                            echo "🔍 Scan Spring Boot image..."
-                            bat "trivy image --exit-code 0 --severity HIGH,CRITICAL ${PROJECT_NAME}/spring-app:${IMAGE_TAG}"
-                            
-                            echo "🔍 Scan Angular image..."
-                            bat "trivy image --exit-code 0 --severity HIGH,CRITICAL ${PROJECT_NAME}/frontend:${IMAGE_TAG}"
-                            
-                            echo "🔍 Scan Python API image..."
-                            bat "trivy image --exit-code 0 --severity HIGH,CRITICAL ${PROJECT_NAME}/python-api:${IMAGE_TAG}"
-                            
-                            echo "🔍 Scan R API image..."
-                            bat "trivy image --exit-code 0 --severity HIGH,CRITICAL ${PROJECT_NAME}/r-api:${IMAGE_TAG}"
-                            
-                            echo "✅ Analyse de sécurité terminée"
+                            bat 'trivy --version'
+                            trivyAvailable = true
+                            echo "✅ Trivy disponible"
                         } catch (Exception e) {
-                            echo "⚠️ Erreur lors du scan de sécurité: ${e.getMessage()}"
-                            echo "Le pipeline continue malgré l'erreur de scan"
+                            echo "⚠️ Trivy non disponible - analyse de sécurité ignorée"
+                            echo "Pour installer Trivy: https://aquasecurity.github.io/trivy/latest/getting-started/installation/"
+                        }
+                        
+                        if (trivyAvailable) {
+                            try {
+                                // Scan each image
+                                echo "🔍 Scan Spring Boot image..."
+                                bat "trivy image --exit-code 0 --severity HIGH,CRITICAL ${PROJECT_NAME}/spring-app:${IMAGE_TAG}"
+                                
+                                echo "🔍 Scan Angular image..."
+                                bat "trivy image --exit-code 0 --severity HIGH,CRITICAL ${PROJECT_NAME}/frontend:${IMAGE_TAG}"
+                                
+                                echo "🔍 Scan Python API image..."
+                                bat "trivy image --exit-code 0 --severity HIGH,CRITICAL ${PROJECT_NAME}/python-api:${IMAGE_TAG}"
+                                
+                                echo "🔍 Scan R API image..."
+                                bat "trivy image --exit-code 0 --severity HIGH,CRITICAL ${PROJECT_NAME}/r-api:${IMAGE_TAG}"
+                                
+                                echo "✅ Analyse de sécurité terminée"
+                            } catch (Exception e) {
+                                echo "⚠️ Erreur lors du scan de sécurité: ${e.getMessage()}"
+                                echo "Le pipeline continue malgré l'erreur de scan"
+                            }
+                        } else {
+                            echo "⚠️ Analyse de sécurité ignorée - Trivy non installé"
                         }
                     } else {
-                        echo "⚠️ Analyse de sécurité ignorée - Trivy non installé"
+                        echo "⚠️ Docker non disponible - analyse de sécurité ignorée"
+                        echo "✅ Étape de sécurité terminée (mode dégradé)"
                     }
                 }
             }
@@ -198,27 +200,29 @@ pipeline {
         }
         
         stage('Déploiement avec docker-compose up') {
-            when {
-                expression { env.DOCKER_AVAILABLE != 'false' }
-            }
             steps {
                 script {
-                    echo "🚀 Déploiement avec docker-compose..."
-                    
-                    // Stop existing containers
-                    bat 'docker-compose down || echo "No existing containers to stop"'
-                    
-                    // Deploy with docker-compose
-                    bat "docker-compose up -d"
-                    
-                    // Wait for services to be healthy
-                    echo "⏳ Attente du démarrage des services..."
-                    sleep(time: 30, unit: 'SECONDS')
-                    
-                    // Verify deployment
-                    bat 'docker-compose ps'
-                    
-                    echo "✅ Déploiement terminé"
+                    if (env.DOCKER_AVAILABLE != 'false') {
+                        echo "🚀 Déploiement avec docker-compose..."
+                        
+                        // Stop existing containers
+                        bat 'docker-compose down || echo "No existing containers to stop"'
+                        
+                        // Deploy with docker-compose
+                        bat "docker-compose up -d"
+                        
+                        // Wait for services to be healthy
+                        echo "⏳ Attente du démarrage des services..."
+                        sleep(time: 30, unit: 'SECONDS')
+                        
+                        // Verify deployment
+                        bat 'docker-compose ps'
+                        
+                        echo "✅ Déploiement terminé"
+                    } else {
+                        echo "⚠️ Docker non disponible - déploiement ignoré"
+                        echo "✅ Étape de déploiement terminée (mode dégradé)"
+                    }
                 }
             }
         }
@@ -287,9 +291,9 @@ pipeline {
                             <li>✅ Checkout du code</li>
                             <li>✅ Tests unitaires</li>
                             <li>✅ Build de l'application</li>
-                            <li>✅ Construction des images Docker</li>
                             <li>✅ Scan de sécurité</li>
                             <li>✅ Déploiement</li>
+                            <li>✅ Vérification post-build</li>
                         </ul>
                     """,
                     mimeType: 'text/html',
