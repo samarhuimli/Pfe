@@ -60,6 +60,7 @@ export default class LoginComponent implements OnInit {
       password: ['123456789', [Validators.required, Validators.minLength(6)]],
       rememberMe: [false]
     });
+
   }
 
   onSubmit(): void {
@@ -69,9 +70,10 @@ export default class LoginComponent implements OnInit {
 
       this.authService.login(username, password).subscribe({
         next: (response) => {
+
           this.showToast('Connexion réussie! Redirection vers le tableau de bord...', 'success');
           this.isLoading = false;
-
+          
           // Navigation is handled in the auth service
         },
         error: (error) => {

@@ -15,42 +15,52 @@ export class ScriptsSpacesComponent {
   templates = [
     {
       title: 'Python 2.7.12',
-      description: 'Version historique de Python, souvent utilisée pour maintenir des projets anciens.',
-      author: 'FinConnect ',
-      code:'',
-     
+      description: 'Version historique de Python, souvent utilisee pour maintenir des projets anciens.',
+      author: 'FinConnect',
+      code: '',
+      type: 'PYTHON',
+      version: '2.7.12'
     },
     {
       title: 'Python 3.5.2',
-      description: 'Première version de Python 3 à avoir gagné en adoption, avec une meilleure prise en charge de l’asynchrone.',
-      author: 'FinConnect ',
-      
+      description: 'Premiere version de Python 3 a avoir gagne en adoption, avec une meilleure prise en charge de l\'asynchrone.',
+      author: 'FinConnect',
+      code: '',
+      type: 'PYTHON',
+      version: '3.5.2'
     },
     {
       title: 'Python 3.12',
-      description: 'Dernière version stable de Python avec des performances améliorées et des fonctionnalités modernes.',
-      author: 'FinConnect ',
-      
+      description: 'Derniere version stable de Python avec des performances ameliorees et des fonctionnalites modernes.',
+      author: 'FinConnect',
+      code: '',
+      type: 'PYTHON',
+      version: '3.12'
     },
     {
-      title: 'R 4.4.0 ',
+      title: 'R 4.4.0',
       description: 'Start Already Tomorrow',
-      author: 'FinConnect ',
-    
+      author: 'FinConnect',
+      code: '',
+      type: 'R',
+      version: '4.4.0'
     },
     {
       title: 'R 4.3.3',
       description: 'Angel Food Cake',
-      author: 'FinConnect ',
-      
+      author: 'FinConnect',
+      code: '',
+      type: 'R',
+      version: '4.3.3'
     },
     {
       title: 'R 4.3.2',
       description: 'Shortstop Beagle',
-      author: 'FinConnect ',
-     
-    },
-   
+      author: 'FinConnect',
+      code: '',
+      type: 'R',
+      version: '4.3.2'
+    }
   ];
 
   selectedTemplate: string = '';
@@ -59,12 +69,19 @@ export class ScriptsSpacesComponent {
 
   constructor(private router: Router) {} // <-- Injecte Router
 
-  useTemplate(code: string) {
-    // Optionnel: sauvegarde dans localStorage
-    localStorage.setItem('pythonTemplate', code);
+  useTemplate(template: any) {
+    // Save template info in localStorage
+    localStorage.setItem('selectedTemplate', JSON.stringify(template));
 
-    // Redirection vers création de script avec le template
-    this.router.navigate(['/scripts/create'], { state: { templateCode: code } });
+    // Navigate to script creation with template data and script type
+    this.router.navigate(['/scripts/create'], { 
+      state: { 
+        templateCode: template.code,
+        scriptType: template.type,
+        version: template.version,
+        templateTitle: template.title
+      } 
+    });
   }
 
   

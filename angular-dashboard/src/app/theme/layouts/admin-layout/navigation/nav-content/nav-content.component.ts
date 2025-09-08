@@ -4,7 +4,7 @@ import { CommonModule, Location, LocationStrategy } from '@angular/common';
 import { RouterModule } from '@angular/router';
 
 // project import
-import { NavigationItem, NavigationItems } from '../navigation';
+import { NavigationItem, NavigationItems, getNavigationItems } from '../navigation';
 import { environment } from 'src/environments/environment';
 import { SharedModule } from 'src/app/theme/shared/shared.module';
 import { NavCollapseComponent } from './nav-collapse/nav-collapse.component';
@@ -42,7 +42,7 @@ export class NavContentComponent implements OnInit {
   title = 'Demo application for version numbering';
   currentApplicationVersion = environment.appVersion;
 
-  navigation = NavigationItems;
+  navigation = getNavigationItems();
   windowWidth = window.innerWidth;
 
   // Constructor
@@ -64,7 +64,7 @@ export class NavContentComponent implements OnInit {
         QuestionOutline
       ]
     );
-    this.navigations = NavigationItems;
+    this.navigations = getNavigationItems();
   }
 
   // Life cycle events

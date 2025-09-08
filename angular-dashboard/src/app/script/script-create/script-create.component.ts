@@ -47,7 +47,37 @@ export class ScriptCreateComponent {
     private router: Router,
     private executionService: ExecutionService,
     private scriptAnalysisService: ScriptAnalysisService
-  ) {}
+  ) {
+    // Check for template data from navigation state
+    const navigation = this.router.getCurrentNavigation();
+    if (navigation?.extras?.state) {
+      const templateData = navigation.extras.state;
+      if (templateData['scriptType']) {
+        this.form.type = templateData['scriptType'];
+      }
+      if (templateData['templateTitle']) {
+        this.form.title = `${templateData['templateTitle']} Script`;
+      }
+      if (templateData['templateCode']) {
+        this.form.content = templateData['templateCode'];
+      }
+    }
+    
+    // Also check localStorage for template data
+    const savedTemplate = localStorage.getItem('selectedTemplate');
+    if (savedTemplate) {
+      try {
+        const template = JSON.parse(savedTemplate);
+        this.form.type = template.type;
+        this.form.title = `${template.title} Script`;
+        this.form.content = template.code || this.getDefaultTemplate(template.type);
+        // Clear the saved template after use
+        localStorage.removeItem('selectedTemplate');
+      } catch (e) {
+        console.error('Error parsing saved template:', e);
+      }
+    }
+  }
 
   async runCode() {
     if (!this.form.content || !this.form.type) return;
@@ -209,5 +239,14 @@ export class ScriptCreateComponent {
         this.analysisLoading = false;
       }
     });
+  }
+
+  private getDefaultTemplate(scriptType: string): string {
+    if (scriptType === 'PYTHON') {
+      return `# Script Python`;
+    } else if (scriptType === 'R') {
+      return `# Script R`;
+    }
+    return '';
   }
 }

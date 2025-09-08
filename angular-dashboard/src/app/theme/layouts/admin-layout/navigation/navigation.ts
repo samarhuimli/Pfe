@@ -16,6 +16,38 @@ export interface NavigationItem {
   link?: string;
   description?: string;
   path?: string;
+  roles?: string[]; // Add roles property to control visibility
+}
+
+// Function to get filtered navigation items based on user role
+export function getNavigationItems(): NavigationItem[] {
+  const userRole = localStorage.getItem('role') || '';
+  
+  return NavigationItems.filter(item => {
+    // If item has roles defined, check if user role is included
+    if (item.roles && item.roles.length > 0) {
+      return item.roles.includes(userRole);
+    }
+    // If no roles defined, show to all users
+    return true;
+  }).map(item => {
+    // Also filter children based on roles
+    if (item.children) {
+      const filteredChildren = item.children.filter(child => {
+        if (child.roles && child.roles.length > 0) {
+          return child.roles.includes(userRole);
+        }
+        return true;
+      });
+      
+      // Only return the group if it has visible children
+      if (filteredChildren.length > 0) {
+        return { ...item, children: filteredChildren };
+      }
+      return null;
+    }
+    return item;
+  }).filter(item => item !== null) as NavigationItem[];
 }
 
 export const NavigationItems: NavigationItem[] = [
@@ -25,6 +57,7 @@ export const NavigationItems: NavigationItem[] = [
     translate: 'navigation.dashboard',
     type: 'group',
     icon: 'icon-navigation',
+    roles: ['admin'], // Only admins can see dashboard
     children: [
       {
         id: 'default',
@@ -45,6 +78,7 @@ export const NavigationItems: NavigationItem[] = [
     translate: 'navigation.uiComponents',
     type: 'group',
     icon: 'icon-navigation',
+    roles: ['scientist'], // Only scientists can see scripts module
     children: [
       {
         id: 'scripts-spaces',
@@ -90,16 +124,18 @@ export const NavigationItems: NavigationItem[] = [
         type: 'item',
         classes: 'nav-item',
         url: '/execution-history',
-        icon: 'bg-colors'
+        icon: 'bg-colors',
+        roles: ['admin', 'scientist'] // Both roles can see execution history
       },
  {
-        id: 'color',
+        id: 'user-management',
         title: 'Gestion des utulisateurs',
-        translate: 'navigation.executionHistory',
+        translate: 'navigation.userManagement',
         type: 'item',
         classes: 'nav-item',
         url: '/user',
-        icon: 'user'
+        icon: 'user',
+        roles: ['admin'] // Only admins can see user management
       },
       {
         id: 'tabler-logs',
@@ -108,7 +144,8 @@ export const NavigationItems: NavigationItem[] = [
         type: 'item',
         classes: 'nav-item',
         url: '/logs',
-        icon: 'ant-design'
+        icon: 'ant-design',
+        roles: ['admin', 'scientist'] // Both roles can see logs
       },
       {
         id: 'tabler-security',
@@ -117,7 +154,8 @@ export const NavigationItems: NavigationItem[] = [
         type: 'item',
         classes: 'nav-item',
         url: '/security',
-        icon: 'ant-design'
+        icon: 'ant-design',
+        roles: ['admin', 'scientist'] // Both roles can see security manager
       }
     ]
   }

@@ -61,7 +61,7 @@
         <!-- Actions sur le code -->
         <div class="col-12">
           <div class="button-group">
-            <button class="btn btn-success" type="button" (click)="runCode()" [disabled]="isRunning || scriptForm.invalid">
+            <button class="btn btn-success" type="button" (click)="runCode()" [disabled]="isRunning || !form.content || !form.type">
               <i class="bi bi-play-fill"></i> Exécuter
             </button>
             <button class="btn btn-outline-primary" type="button" (click)="saveToFile()" [disabled]="scriptForm.invalid">

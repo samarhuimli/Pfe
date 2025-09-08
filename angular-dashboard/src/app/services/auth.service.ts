@@ -31,12 +31,13 @@ export class AuthService {
         tap(response => {
           // Store the token
           localStorage.setItem('auth_token', response.token);
+          console.log('auth',username)
           localStorage.setItem('username', username);
-          if(username='scientist'){
+           if (username === 'samar@scientist.com') {   // ⚠️ ici problème
           localStorage.setItem('role', "scientist");
-          }else{
+        } else {
           localStorage.setItem('role', "admin");
-          }
+        }
           this.isAuthenticatedSubject.next(true);
           this.router.navigate(['/dashboard']);
         }),
@@ -46,6 +47,10 @@ export class AuthService {
 
   logout(): void {
     localStorage.removeItem('auth_token');
+       localStorage.removeItem('username');
+    localStorage.removeItem('role');
+
+
     this.isAuthenticatedSubject.next(false);
     this.router.navigate(['/login']);
   }
