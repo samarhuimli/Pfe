@@ -71,6 +71,7 @@ export default class LoginComponent implements OnInit {
         next: (response) => {
           this.showToast('Connexion réussie! Redirection vers le tableau de bord...', 'success');
           this.isLoading = false;
+
           // Navigation is handled in the auth service
         },
         error: (error) => {

@@ -6,9 +6,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
-import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
-import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
@@ -26,8 +24,8 @@ import java.util.Arrays;
 import java.util.Collections;
 
 @Configuration
-@EnableWebSecurity
-@EnableMethodSecurity
+// @EnableWebSecurity - Disabled to allow all requests without authentication
+// @EnableMethodSecurity - Disabled to allow all requests without authentication
 public class SecurityConfig {
 
     @Value("${jwt.secret}")
@@ -36,28 +34,10 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
-                .cors(cors -> cors.configurationSource(corsConfigurationSource())) // Ajout de la configuration CORS
-                .csrf(csrf -> csrf.disable()) // Désactiver CSRF pour API REST
-                .authorizeHttpRequests(auth -> auth
-                        .requestMatchers(
-                                "/api/auth/**",       // Endpoints publics (login/register/refresh)
-                                "/api/users/**",      // Endpoints utilisateurs publics
-                                "/actuator/health",   // Au besoin
-                                "/error"              // Erreur par défaut
-                        ).permitAll()
-                        // 🔹 accessible par USER et ADMIN
-                        .requestMatchers("/api/executions/grouped").hasAnyRole("USER", "ADMIN")
-                        // 🔹 tout le reste sous /api/executions/** nécessite ADMIN
-                        .requestMatchers("/api/executions/**").hasRole("ADMIN")
-                        // 🔹 toute autre requête nécessite un JWT valide
-                        .anyRequest().authenticated()
-                )
-                .sessionManagement(sess -> sess.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-                .oauth2ResourceServer(oauth2 -> oauth2
-                        .jwt(jwt -> jwt
-                                .jwtAuthenticationConverter(jwtAuthenticationConverter()) // Conversion personnalisée des rôles
-                        )
-                );
+                .cors(cors -> cors.configurationSource(corsConfigurationSource()))
+                .csrf(csrf -> csrf.disable())
+                .authorizeHttpRequests(auth -> auth.anyRequest().permitAll())
+                .sessionManagement(sess -> sess.sessionCreationPolicy(SessionCreationPolicy.STATELESS));
 
         return http.build();
     }

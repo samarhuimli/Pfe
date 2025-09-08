@@ -31,6 +31,12 @@ export class AuthService {
         tap(response => {
           // Store the token
           localStorage.setItem('auth_token', response.token);
+          localStorage.setItem('username', username);
+          if(username='scientist'){
+          localStorage.setItem('role', "scientist");
+          }else{
+          localStorage.setItem('role', "admin");
+          }
           this.isAuthenticatedSubject.next(true);
           this.router.navigate(['/dashboard']);
         }),
