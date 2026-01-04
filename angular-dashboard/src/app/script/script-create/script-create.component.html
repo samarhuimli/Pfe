@@ -35,43 +35,70 @@
         </div>
 
         <div class="col-12">
-          <label for="content" class="form-label">Code</label>
-          <textarea id="content" class="form-control code-editor" [(ngModel)]="form.content" name="content" rows="10" required #content="ngModel"></textarea>
+          <div class="editor-container">
+            <div class="editor-header">
+              <div class="editor-tabs">
+                <div class="editor-tab active">
+                  <i class="fas fa-file-code"></i>
+                  <span>{{ form.title || 'Untitled' }}.{{ form.type === 'R' ? 'R' : 'py' }}</span>
+                </div>
+              </div>
+              <div class="editor-actions">
+                <button type="button" class="editor-btn" (click)="runCode()" [disabled]="isRunning || !form.content || !form.type" title="Exécuter">
+                  <i class="fas fa-play" *ngIf="!isRunning"></i>
+                  <i class="fas fa-spinner fa-spin" *ngIf="isRunning"></i>
+                </button>
+                <button *ngIf="form.type === 'PYTHON'" type="button" class="editor-btn" (click)="analyzePythonScript()" [disabled]="!form.content || analysisLoading" title="Analyser Python">
+                  <i class="fas fa-shield-alt" *ngIf="!analysisLoading"></i>
+                  <i class="fas fa-spinner fa-spin" *ngIf="analysisLoading"></i>
+                </button>
+                <button *ngIf="form.type === 'R'" type="button" class="editor-btn" (click)="analyzeRScript()" [disabled]="!form.content || analysisLoading" title="Analyser R">
+                  <i class="fas fa-shield-alt" *ngIf="!analysisLoading"></i>
+                  <i class="fas fa-spinner fa-spin" *ngIf="analysisLoading"></i>
+                </button>
+                <div class="editor-divider"></div>
+                <button type="button" class="editor-btn" (click)="saveToFile()" [disabled]="!form.content" title="Télécharger">
+                  <i class="fas fa-download"></i>
+                </button>
+                <button type="button" class="editor-btn" (click)="clearEditor()" title="Effacer">
+                  <i class="fas fa-trash"></i>
+                </button>
+                <div class="editor-divider"></div>
+                <button type="button" class="editor-btn" title="Format Code">
+                  <i class="fas fa-indent"></i>
+                </button>
+                <button type="button" class="editor-btn" title="Settings">
+                  <i class="fas fa-cog"></i>
+                </button>
+              </div>
+            </div>
+            <div class="editor-body">
+              <div class="line-numbers" id="lineNumbers"></div>
+              <textarea 
+                id="content" 
+                class="form-control code-editor" 
+                [(ngModel)]="form.content" 
+                name="content" 
+                rows="15" 
+                required 
+                #content="ngModel"
+                placeholder="# Start typing your code here..."
+                (input)="updateLineNumbers()"
+                (scroll)="syncScroll($event)">
+              </textarea>
+            </div>
+          </div>
           <div *ngIf="content.invalid && (content.dirty || content.touched)" class="text-danger">
             Le contenu est requis
           </div>
         </div>
 
-        <!-- Boutons d'analyse de vulnérabilité -->
-        <div class="col-12 mb-2">
-          <button *ngIf="form.type === 'PYTHON'" class="btn btn-warning me-2" type="button" (click)="analyzePythonScript()" [disabled]="!form.content || analysisLoading">
-            <i class="bi bi-shield-lock"></i> Analyser Python
-          </button>
-          <button *ngIf="form.type === 'R'" class="btn btn-warning me-2" type="button" (click)="analyzeRScript()" [disabled]="!form.content || analysisLoading">
-            <i class="bi bi-shield-lock"></i> Analyser R
-          </button>
-          <span *ngIf="analysisLoading" class="ms-2"><i class="bi bi-arrow-repeat spin"></i> Analyse en cours...</span>
-        </div>
         <div class="col-12" *ngIf="analysisResult">
           <div class="alert alert-info pre-scrollable" style="white-space: pre-wrap;">
             {{ analysisResult }}
           </div>
         </div>
 
-        <!-- Actions sur le code -->
-        <div class="col-12">
-          <div class="button-group">
-            <button class="btn btn-success" type="button" (click)="runCode()" [disabled]="isRunning || !form.content || !form.type">
-              <i class="bi bi-play-fill"></i> Exécuter
-            </button>
-            <button class="btn btn-outline-primary" type="button" (click)="saveToFile()" [disabled]="scriptForm.invalid">
-              <i class="bi bi-download"></i> Télécharger
-            </button>
-            <button class="btn btn-outline-secondary" type="button" (click)="clearEditor()">
-              <i class="bi bi-trash3"></i> Effacer
-            </button>
-          </div>
-        </div>
 
         <!-- Résultats d'exécution -->
 <div class="col-12" *ngIf="output">

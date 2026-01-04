@@ -42,9 +42,12 @@ export class NavRightComponent {
   @Output() Customize = new EventEmitter();
   windowWidth: number;
   screenFull: boolean = true;
+  userName: string = 'Samar Huimli';
+  userRole: string = 'Admin';
 
   constructor(private iconService: IconService,private authService: AuthService) {
     this.windowWidth = window.innerWidth;
+    this.setUserNameBasedOnRole();
     this.iconService.addIcon(
       ...[
         CheckCircleOutline,
@@ -77,14 +80,7 @@ export class NavRightComponent {
       icon: 'user',
       title: 'View Profile'
     },
-    {
-      icon: 'profile',
-      title: 'Social Profile'
-    },
-    {
-      icon: 'wallet',
-      title: 'Billing'
-    }
+    
   ];
 
   setting = [
@@ -109,6 +105,18 @@ export class NavRightComponent {
       title: 'History'
     }
   ];
+
+  setUserNameBasedOnRole(): void {
+    const role = localStorage.getItem('role');
+    if (role === 'scientist') {
+      this.userName = 'samar-scientist';
+      this.userRole = 'Scientist';
+    } else {
+      this.userName = 'samar-admin';
+      this.userRole = 'Admin';
+    }
+  }
+
 logout(){
 this.authService.logout();
 }

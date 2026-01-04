@@ -22,7 +22,7 @@ export interface NavigationItem {
 // Function to get filtered navigation items based on user role
 export function getNavigationItems(): NavigationItem[] {
   const userRole = localStorage.getItem('role') || '';
-  
+
   return NavigationItems.filter(item => {
     // If item has roles defined, check if user role is included
     if (item.roles && item.roles.length > 0) {
@@ -39,7 +39,7 @@ export function getNavigationItems(): NavigationItem[] {
         }
         return true;
       });
-      
+
       // Only return the group if it has visible children
       if (filteredChildren.length > 0) {
         return { ...item, children: filteredChildren };
@@ -145,7 +145,7 @@ export const NavigationItems: NavigationItem[] = [
         classes: 'nav-item',
         url: '/logs',
         icon: 'ant-design',
-        roles: ['admin', 'scientist'] // Both roles can see logs
+        roles: ['admin'] // Both roles can see logs
       },
       {
         id: 'tabler-security',
@@ -155,7 +155,7 @@ export const NavigationItems: NavigationItem[] = [
         classes: 'nav-item',
         url: '/security',
         icon: 'ant-design',
-        roles: ['admin', 'scientist'] // Both roles can see security manager
+        roles: ['admin'] // Both roles can see security manager
       }
     ]
   }

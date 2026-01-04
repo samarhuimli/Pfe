@@ -1,4 +1,4 @@
-import { Component, Input, Output, EventEmitter } from '@angular/core';
+import { Component, Input, Output, EventEmitter, AfterViewInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
@@ -16,7 +16,7 @@ import { ScriptAnalysisService } from '../../services/script-analysis.service';
   templateUrl: './script-create.component.html',
   styleUrls: ['./script-create.component.scss']
 })
-export class ScriptCreateComponent {
+export class ScriptCreateComponent implements AfterViewInit {
   executionResult = {
     title: 'Mon Script',
     success: false,
@@ -76,6 +76,38 @@ export class ScriptCreateComponent {
       } catch (e) {
         console.error('Error parsing saved template:', e);
       }
+    }
+  }
+
+  ngAfterViewInit() {
+    // Initialize line numbers
+    setTimeout(() => {
+      this.updateLineNumbers();
+    }, 100);
+  }
+
+  updateLineNumbers() {
+    const textarea = document.getElementById('content') as HTMLTextAreaElement;
+    const lineNumbersDiv = document.getElementById('lineNumbers');
+    
+    if (textarea && lineNumbersDiv) {
+      const lines = textarea.value.split('\n').length;
+      let lineNumbersContent = '';
+      
+      for (let i = 1; i <= Math.max(lines, 15); i++) {
+        lineNumbersContent += i + '\n';
+      }
+      
+      lineNumbersDiv.textContent = lineNumbersContent;
+    }
+  }
+
+  syncScroll(event: any) {
+    const textarea = event.target;
+    const lineNumbersDiv = document.getElementById('lineNumbers');
+    
+    if (lineNumbersDiv) {
+      lineNumbersDiv.scrollTop = textarea.scrollTop;
     }
   }
 

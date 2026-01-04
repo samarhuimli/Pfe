@@ -4,6 +4,13 @@ import { FormsModule } from '@angular/forms';
 import { SecurityService } from '../services/security.service';
 import { forkJoin } from 'rxjs';
 
+// Toast notification interface
+interface ToastMessage {
+  message: string;
+  type: 'success' | 'error' | 'info' | 'warning';
+  show: boolean;
+}
+
 @Component({
   selector: 'app-security-manager',
   standalone: true,
@@ -19,6 +26,11 @@ export class SecurityManagerComponent implements OnInit {
   newAllowedOperation: string = '';
   isSaving: boolean = false;
   errorMessage: string = '';
+  toast: ToastMessage = {
+    message: '',
+    type: 'info',
+    show: false
+  };
 
   constructor(private securityService: SecurityService) {}
 
@@ -73,41 +85,54 @@ export class SecurityManagerComponent implements OnInit {
     this.saveConfig();
   }
 
-saveConfig() {
-  this.isSaving = true;
-  this.securityService.saveForbiddenTables(this.forbiddenTables).subscribe({
-    next: (response) => {
-      console.log('Sauvegarde tables interdites:', response);
-      this.securityService.saveAllowedOperations(this.allowedOperations).subscribe({
-        next: (response) => {
-          console.log('Sauvegarde opérations:', response);
-          this.securityService.notifyExecution(this.forbiddenTables, this.allowedOperations).subscribe({
-            next: (response) => {
-              console.log('Notification réussie:', response);
-              alert('Sauvegardé avec succès');
-              this.isSaving = false;
-            },
-            error: (err) => {
-              console.warn('Erreur notification (non bloquante):', err);
-              this.errorMessage = `Notification échouée: ${err.status} - ${err.message} (sauvegarde réussie)`;
-              alert('Sauvegardé avec succès (notification échouée)');
-              this.isSaving = false;
-            }
-          });
-        },
-        error: (err) => {
-          console.error('Erreur sauvegarde opérations:', err);
-          alert('Erreur sauvegarde opérations');
-          this.isSaving = false;
-        }
-      });
-    },
-    error: (err) => {
-      console.error('Erreur sauvegarde tables:', err);
-      this.errorMessage = `Erreur sauvegarde tables: ${err.status} - ${err.message}`;
-      alert('Erreur sauvegarde tables');
-      this.isSaving = false;
-    }
-  });
-}
+  showToast(message: string, type: 'success' | 'error' | 'info' | 'warning' = 'info') {
+    this.toast = {
+      message,
+      type,
+      show: true
+    };
+    
+    // Hide toast after 5 seconds
+    setTimeout(() => {
+      this.toast.show = false;
+    }, 5000);
+  }
+
+  saveConfig() {
+    this.isSaving = true;
+    this.securityService.saveForbiddenTables(this.forbiddenTables).subscribe({
+      next: (response) => {
+        console.log('Sauvegarde tables interdites:', response);
+        this.securityService.saveAllowedOperations(this.allowedOperations).subscribe({
+          next: (response) => {
+            console.log('Sauvegarde opérations:', response);
+            this.securityService.notifyExecution(this.forbiddenTables, this.allowedOperations).subscribe({
+              next: (response) => {
+                console.log('Notification réussie:', response);
+                this.showToast('Configuration sauvegardée avec succès', 'success');
+                this.isSaving = false;
+              },
+              error: (err) => {
+                console.warn('Erreur notification (non bloquante):', err);
+                this.errorMessage = `Notification échouée: ${err.status} - ${err.message} (sauvegarde réussie)`;
+                this.showToast('Configuration sauvegardée (notification échouée)', 'warning');
+                this.isSaving = false;
+              }
+            });
+          },
+          error: (err) => {
+            console.error('Erreur sauvegarde opérations:', err);
+            this.showToast(`Erreur lors de la sauvegarde des opérations: ${err.message}`, 'error');
+            this.isSaving = false;
+          }
+        });
+      },
+      error: (err) => {
+        console.error('Erreur sauvegarde tables:', err);
+        this.errorMessage = `Erreur sauvegarde tables: ${err.status} - ${err.message}`;
+        this.showToast(`Erreur lors de la sauvegarde des tables: ${err.message}`, 'error');
+        this.isSaving = false;
+      }
+    });
+  }
 }

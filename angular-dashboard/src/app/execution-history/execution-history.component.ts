@@ -62,7 +62,7 @@ export class ExecutionHistoryComponent implements OnInit {
             status: success ? 'success' : 'failed',
             formattedTime: this.formatExecutionTime(exec.executionTime),
             formattedDate: exec.timestamp ? this.datePipe.transform(exec.timestamp, 'dd/MM/yy HH:mm') : '',
-            createdBy: exec.createdBy || 'Inconnu'
+            createdBy: exec.createdBy || 'Samar'
           };
         })
         .sort((a: any, b: any) => b.timestamp.getTime() - a.timestamp.getTime());

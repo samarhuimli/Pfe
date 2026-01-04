@@ -33,13 +33,20 @@ export class AuthService {
           localStorage.setItem('auth_token', response.token);
           console.log('auth',username)
           localStorage.setItem('username', username);
+this.router.navigate(['/scripts-spaces']);
+
            if (username === 'samar@scientist.com') {   // ⚠️ ici problème
           localStorage.setItem('role', "scientist");
         } else {
           localStorage.setItem('role', "admin");
+
+
+
+
+this.router.navigate(['/dashboard']);
+
         }
           this.isAuthenticatedSubject.next(true);
-          this.router.navigate(['/dashboard']);
         }),
         catchError(this.handleError)
       );
@@ -65,7 +72,7 @@ export class AuthService {
 
   private handleError(error: HttpErrorResponse) {
     let errorMessage = 'An unknown error occurred';
-    
+
     if (error.status === 401) {
       errorMessage = 'Invalid username or password';
     } else if (error.error && typeof error.error === 'string') {
@@ -75,7 +82,7 @@ export class AuthService {
     } else if (error.statusText) {
       errorMessage = error.statusText;
     }
-    
+
     return throwError(() => new Error(errorMessage));
   }
 }
